@@ -68,6 +68,7 @@ h1{margin:0;font-size:21px;font-weight:700;letter-spacing:-.015em;color:var(--br
 .flabel{font-size:12px;font-weight:600;color:var(--chrome-label);margin-right:2px}
 .filterhelp{margin:9px 0 0;color:var(--chrome-help);font-size:11.5px}
 .popwrap{position:relative;display:inline-flex}
+.popwrap[hidden]{display:none}
 .pop{position:absolute;top:calc(100% + 7px);left:0;z-index:40;min-width:246px;
   display:flex;flex-direction:column;gap:9px;padding:13px 15px;border-radius:11px;
   background:#fff;border:1px solid var(--line);box-shadow:0 10px 28px rgba(43,41,37,.14)}
@@ -332,6 +333,28 @@ body.noscroll{overflow:hidden}
   border-top:1px dashed var(--line)}
 .sumempty{color:var(--ink-3);font-size:13.5px;padding:6px 0}
 /* ---------- scope and sequence ---------- */
+.startcard{max-width:640px;margin:22px auto;padding:26px 28px;background:var(--card);
+  border:1px solid var(--line);border-radius:14px;box-shadow:0 2px 10px rgba(43,41,37,.05)}
+.startcard h2{margin:0 0 8px;font-size:19px;letter-spacing:-.015em;color:var(--brand)}
+.startlead{margin:0 0 16px;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.startstep{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:6px}
+.startopts{display:flex;gap:12px;flex-wrap:wrap}
+.startopt{flex:1;min-width:210px;text-align:left;font:inherit;cursor:pointer;padding:15px 16px;
+  border-radius:11px;border:1px solid var(--line);background:#FFFDFA}
+.startopt:hover{border-color:var(--brand);background:#FFFCF4}
+.startopt:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.so-t{display:block;font-size:14.5px;font-weight:650;color:var(--ink)}
+.so-d{display:block;margin-top:4px;font-size:12.5px;color:var(--ink-3);line-height:1.45}
+.startchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.startchip{border:1px solid var(--line);background:#fff;color:var(--ink-2);font-size:13.5px;padding:8px 14px}
+.startchip[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
+.startname{max-width:320px;margin-bottom:16px}
+.startacts{display:flex;gap:9px}
+.btn.primary{background:var(--brand-gold);border-color:#E4B600;color:var(--brand);font-weight:650}
+.btn.primary:hover{background:#FFD733;color:var(--brand)}
+.btn.primary[disabled]{opacity:.45;cursor:default}
+.btn.primary[disabled]:hover{background:var(--brand-gold)}
 .scopewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
 .scopegrid{width:100%;min-width:840px;border-collapse:separate;border-spacing:0}
 .scopegrid th,.scopegrid td{vertical-align:top;padding:9px 10px;
@@ -477,7 +500,7 @@ body.noscroll{overflow:hidden}
         <div class="fgroup" id="yearf"><span class="flabel">Year group</span></div>
       </div>
       <div class="filters">
-        <div class="fgroup" id="klaf"><span class="flabel">Learning area</span></div>
+        <div class="fgroup" id="klaf"><span class="flabel">Syllabus</span></div>
         <div class="fgroup" id="partf"><span class="flabel">Maths part</span></div>
       </div>
       <div class="searchrow">
@@ -490,7 +513,7 @@ body.noscroll{overflow:hidden}
           <span class="pop pop-right" id="morepop" hidden>
             <button class="btn popitem" id="expand">Expand all focus areas</button>
             <button class="btn popitem" id="reset">Reset search and filters</button>
-            <button class="btn popitem" id="topjoin" type="button">Join a tracker with a code</button>
+            <button class="btn popitem" id="topjoin" type="button">Join a plan with a code</button>
           </span>
         </span>
       </div>
@@ -499,7 +522,7 @@ body.noscroll{overflow:hidden}
     </div>
       <div class="trackbar" id="trackbar">
         <div class="trackrow">
-          <select class="tsel" id="trksel" aria-label="Active teaching tracker"></select>
+          <select class="tsel" id="trksel" aria-label="Active plan"></select>
           <span class="popwrap">
             <button class="btn ddbtn" id="trktermbtn" type="button" aria-haspopup="true"
               aria-expanded="false">Ticking as Term 1</button>
@@ -528,10 +551,10 @@ body.noscroll{overflow:hidden}
           <button class="btn" id="trkshare" type="button">Share</button>
           <span class="popwrap">
             <button class="btn" id="trkmore" type="button" aria-haspopup="true"
-              aria-expanded="false" aria-label="Tracker actions">&#8943;</button>
+              aria-expanded="false" aria-label="Plan actions">&#8943;</button>
             <span class="pop pop-right" id="trkmorepop" hidden>
-              <button class="btn popitem" id="trknew" type="button">New tracker</button>
-              <button class="btn popitem" id="trkren" type="button">Rename this tracker</button>
+              <button class="btn popitem" id="trknew" type="button">New plan</button>
+              <button class="btn popitem" id="trkren" type="button">Rename this plan</button>
               <button class="btn popitem" id="trkdel" type="button">Delete</button>
               <button class="btn popitem" id="trkjoin" type="button">Join with a code</button>
               <button class="btn popitem" id="trkexp" type="button">Export a backup</button>
@@ -541,9 +564,9 @@ body.noscroll{overflow:hidden}
           <span class="saved" id="trksaved">Saved on this device</span>
         </div>
         <div class="trackrow" id="trknamerow" hidden>
-          <span class="flabel" id="trknamelabel">New tracker</span>
+          <span class="flabel" id="trknamelabel">New plan</span>
           <input class="tsel" id="trkname" type="text" autocomplete="off" style="max-width:280px"
-            placeholder="e.g. 4B — 2026" aria-label="Tracker name">
+            placeholder="e.g. 4B — 2026" aria-label="Plan name">
           <span class="flabel">Year group</span>
           <div class="fgroup" id="trkyearf"></div>
           <button class="btn" id="trknameok" type="button">Save</button>
@@ -1104,6 +1127,13 @@ function setView(view, updateHash=false){
   document.getElementById("work-controls").hidden = view !== "work-samples";
   /* the tracker belongs to ticking and planning alike */
   document.getElementById("trackbar").hidden = !(view==="syllabus" || view==="scope");
+  /* a scope and sequence is what you intend to teach, so the term stamp and the
+     taught filter — both recording controls — have no place on it */
+  const planning = view === "scope";
+  const termWrap = document.getElementById("trktermbtn");
+  const viewWrap = document.getElementById("trkviewbtn");
+  if(termWrap) termWrap.parentElement.hidden = planning;
+  if(viewWrap) viewWrap.parentElement.hidden = planning;
   viewButtons.forEach(button=>button.setAttribute("aria-selected", button.dataset.view===view));
   document.title = VIEW_TITLES[view] || VIEW_TITLES.syllabus;
   if(view==="scope" && scopeReady) renderScope();
@@ -1262,8 +1292,8 @@ function trackLoad(){
 let syncFailed = false;
 function noteSyncFailure(what){
   syncFailed = true;
-  setSaved("Not saved to the shared tracker", true);
-  toast(what + " could not be saved to the shared tracker");
+  setSaved("Not saved to the shared plan", true);
+  toast(what + " could not be saved to the shared plan");
 }
 function noteSyncOk(){
   syncFailed = false;
@@ -1308,7 +1338,7 @@ function tickState(key, isPoint){
 }
 function toggleTick(key, isPoint){
   const tracker = activeTracker();
-  if(!tracker){ toast("Create a tracker first"); return; }
+  if(!tracker){ toast("Create a plan first"); return; }
   const map = isPoint ? tracker.pt : tracker.fa;
   const value = map[key] ? null : {t:track.term};
   if(value) map[key] = value; else delete map[key];
@@ -1382,7 +1412,7 @@ function renderTrackerSelect(){
   select.innerHTML = "";
   if(!track.store.trackers.length){
     const option = document.createElement("option");
-    option.value = ""; option.textContent = "No tracker yet — choose New";
+    option.value = ""; option.textContent = "No plan yet — choose New";
     select.appendChild(option);
   } else {
     track.store.trackers.forEach(tracker=>{
@@ -1484,7 +1514,7 @@ function summaryHTML(){
 }
 function openSummary(){
   const tracker = activeTracker();
-  if(!tracker){ toast("Create a tracker first"); return; }
+  if(!tracker){ toast("Create a plan first"); return; }
   document.getElementById("sheet").innerHTML = summaryHTML();
   document.getElementById("summary").hidden = false;
   document.body.classList.add("report","noscroll");
@@ -1499,7 +1529,7 @@ function closeSummary(){
 /* ---------- backup files ---------- */
 function trackExport(){
   const tracker = activeTracker();
-  if(!tracker){ toast("Create a tracker first"); return; }
+  if(!tracker){ toast("Create a plan first"); return; }
   /* labels travel with the keys so a tick can be re-matched by hand if NESA rewords a descriptor */
   const payload = {
     format:"easy-syllabus-tracker", version:1, exported:new Date().toISOString(),
@@ -1517,7 +1547,7 @@ function trackExport(){
   const a = document.createElement("a");
   a.href = url;
   a.download = (tracker.name.replace(/[^\w\s-]+/g,"").trim().replace(/\s+/g,"-").toLowerCase()
-                || "tracker") + "-backup.json";
+                || "plan") + "-backup.json";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 1000);
   toast("Backup downloaded");
@@ -1529,10 +1559,10 @@ function trackImport(file){
     try{ payload = JSON.parse(reader.result); }
     catch(_){ toast("That file is not a valid backup"); return; }
     if(!payload || payload.format!=="easy-syllabus-tracker" || !payload.tracker){
-      toast("That file is not a tracker backup"); return;
+      toast("That file is not a plan backup"); return;
     }
     const incoming = payload.tracker;
-    const name = incoming.name || "Imported tracker";
+    const name = incoming.name || "Imported plan";
     /* merging keeps every tick from both sides rather than picking a winner */
     const target = track.store.trackers.find(t=>t.name===name) || makeTracker(name);
     const merged = target.fa && Object.keys(target.fa).length;
@@ -1555,9 +1585,9 @@ const TRACK_YEARS = [["","All years"]].concat(YEARS);
 let nameYear = "";
 function openNameRow(mode){
   const tracker = activeTracker();
-  if(mode==="rename" && !tracker){ toast("Create a tracker first"); return; }
+  if(mode==="rename" && !tracker){ toast("Create a plan first"); return; }
   nameMode = mode;
-  document.getElementById("trknamelabel").textContent = mode==="rename" ? "Rename" : "New tracker";
+  document.getElementById("trknamelabel").textContent = mode==="rename" ? "Rename" : "New plan";
   const input = document.getElementById("trkname");
   input.value = mode==="rename" ? tracker.name : `4B — ${new Date().getFullYear()}`;
   nameYear = mode==="rename" ? (tracker.year || "") : "Year 4";
@@ -1585,7 +1615,7 @@ function closeNameRow(){
 }
 function commitNameRow(){
   const name = document.getElementById("trkname").value.trim();
-  if(!name){ toast("Give the tracker a name"); return; }
+  if(!name){ toast("Give the plan a name"); return; }
   const tracker = nameMode==="rename" ? activeTracker() : makeTracker(name);
   if(tracker){ tracker.name = name; tracker.year = nameYear; }
   closeNameRow(); applyTrackerYear(); trackSave(); renderTrackerSelect(); render();
@@ -1626,12 +1656,12 @@ function disarmDelete(){
 }
 document.getElementById("trkdel").addEventListener("click", ()=>{
   const tracker = activeTracker();
-  if(!tracker){ toast("No tracker to delete"); return; }
+  if(!tracker){ toast("No plan to delete"); return; }
   if(!deleteArmed){
     deleteArmed = true;
     const ticks = Object.keys(tracker.fa).length;
     document.getElementById("trkdel").textContent = tracker.remote
-      ? "Leave shared tracker?"
+      ? "Leave shared plan?"
       : `Delete ${ticks} tick${ticks===1?"":"s"}?`;
     deleteTimer = setTimeout(disarmDelete, 5000);
     return;
@@ -1810,7 +1840,7 @@ async function pushTick(tracker, key, isPoint, value){
 
 async function shareTracker(){
   const tracker = activeTracker();
-  if(!tracker){ toast("Create a tracker first"); return; }
+  if(!tracker){ toast("Create a plan first"); return; }
   if(tracker.remote){
     openShareRow("share", tracker.remote.code);
     copy(shareLink(tracker.remote.code), "Share link copied");
@@ -1848,16 +1878,16 @@ async function joinTracker(raw){
   if(already){
     track.store.active = already.id;
     trackSave(); renderTrackerSelect(); render(); closeShareRow();
-    toast("You are already in that tracker");
+    toast("You are already in that plan");
     return;
   }
   try{
     const fb = await firebaseReady();
     const snapshot = await fb.store.getDoc(trackerRef(fb, code));
-    if(!snapshot.exists()){ toast("No tracker with that code"); return; }
+    if(!snapshot.exists()){ toast("No plan with that code"); return; }
     const data = snapshot.data();
     const now = new Date().toISOString();
-    const tracker = {id:fnv1a(code), name:data.name || "Shared tracker",
+    const tracker = {id:fnv1a(code), name:data.name || "Shared plan",
                      created:data.created || now, updated:data.updated || now,
                      year:data.year || "",
                      fa:data.fa || {}, pt:data.pt || {}, units:data.units || {},
@@ -1875,7 +1905,7 @@ async function joinTracker(raw){
 /* ---------- share row ---------- */
 function openShareRow(mode, code){
   const input = document.getElementById("trksharecode");
-  document.getElementById("trksharelabel").textContent = mode==="share" ? "Share link" : "Join a tracker";
+  document.getElementById("trksharelabel").textContent = mode==="share" ? "Share link" : "Join a plan";
   /* the field shows the link, because that is the thing people recognise and send */
   document.getElementById("trksharerow").dataset.code = code || "";
   input.value = mode==="share" && code ? shareLink(code) : "";
@@ -1885,7 +1915,7 @@ function openShareRow(mode, code){
   document.getElementById("trksharecopy").hidden = mode !== "share";
   document.getElementById("trksharelink").hidden = mode !== "share";
   document.getElementById("trksharemsg").textContent = mode==="share"
-    ? "Copied. Anyone who opens this link joins the tracker and can tick it."
+    ? "Copied. Anyone who opens this link joins the plan and can tick it."
     : "Paste the link or code a colleague sent you.";
   document.getElementById("trksharerow").hidden = false;
   input.focus();
@@ -1954,10 +1984,7 @@ function renderScope(){
   const printBtn = document.getElementById("scopeprint");
   const tracker = activeTracker();
   if(!track.on || !tracker){
-    host.innerHTML = `<div class="empty">
-      <p>Turn on Tracking and choose a tracker to plan units of work across the year.</p>
-      <button class="btn" onclick="document.getElementById('track').click()">Turn on Tracking</button>
-    </div>`;
+    host.innerHTML = scopeStartHTML();
     meter.textContent = "";
     printBtn.hidden = true;
     return;
@@ -1968,7 +1995,7 @@ function renderScope(){
     (units.length ? ` &middot; <b>${taught}</b> marked taught` : "");
   printBtn.hidden = !units.length;
 
-  let h = `<div class="scopewrap"><table class="scopegrid"><thead><tr><th>Learning area</th>`;
+  let h = `<div class="scopewrap"><table class="scopegrid"><thead><tr><th>Syllabus</th>`;
   TRACK_TERMS.forEach(([,label])=>{ h += `<th>${esc(label)}</th>`; });
   h += `</tr></thead><tbody>`;
   KLAS.forEach(([k,label])=>{
@@ -1998,13 +2025,74 @@ function renderScope(){
   host.innerHTML = h + `</tbody></table></div>`;
 }
 
+/* ---------- getting started ---------- */
+/* Two ways in, because being walked through it and being left alone are both
+   reasonable preferences. Guided asks two questions on their own screens; setting
+   it up yourself reuses the one-line name-and-year row already in the plan bar. */
+let scopeSetup = null;
+function scopeStartHTML(){
+  if(!scopeSetup){
+    return `<div class="startcard">
+      <h2>Plan your year</h2>
+      <p class="startlead">A scope and sequence lays your units of work across the four terms,
+        and links each one to the syllabus content it covers.</p>
+      <div class="startopts">
+        <button class="startopt" type="button" data-start="guided">
+          <span class="so-t">Guided setup</span>
+          <span class="so-d">Two questions, then straight into your planner.</span>
+        </button>
+        <button class="startopt" type="button" data-start="self">
+          <span class="so-t">Set it up myself</span>
+          <span class="so-d">One line to fill in, then an empty planner.</span>
+        </button>
+      </div>
+    </div>`;
+  }
+  if(scopeSetup.step === "year"){
+    return `<div class="startcard">
+      <div class="startstep">Step 1 of 2</div>
+      <h2>Which year are you planning?</h2>
+      <div class="startchips">` + YEARS.map(([value,label])=>
+        `<button class="chip startchip" type="button" data-year="${esc(value)}"
+           aria-pressed="${scopeSetup.year===value}">${esc(label)}</button>`).join("") + `</div>
+      <p class="startlead">This keeps the planner to your stage, so you are never offered
+        content from another year.</p>
+      <div class="startacts">
+        <button class="btn" type="button" data-start="cancel">Cancel</button>
+        <button class="btn primary" type="button" data-start="toname"
+          ${scopeSetup.year ? "" : "disabled"}>Next</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="startcard">
+    <div class="startstep">Step 2 of 2</div>
+    <h2>What should this plan be called?</h2>
+    <p class="startlead">Something you will recognise next year — a class and a year works well.</p>
+    <input class="uinput startname" id="startname" type="text" autocomplete="off"
+      value="${esc(scopeSetup.name)}" placeholder="e.g. 4B — 2026">
+    <div class="startacts">
+      <button class="btn" type="button" data-start="back">Back</button>
+      <button class="btn primary" type="button" data-start="create">Start planning</button>
+    </div>
+  </div>`;
+}
+function createPlan(year, name){
+  const plan = makeTracker(name.trim() || ("My plan — " + new Date().getFullYear()));
+  plan.year = year || "";
+  scopeSetup = null;
+  setTracking(true, false);   /* internal: the word "tracking" is never shown */
+  applyTrackerYear();
+  trackSave(); renderTrackerSelect(); render(); renderScope();
+  toast("Plan created — choose a term and add your first unit");
+}
+
 /* ---------- unit editor ---------- */
 let unitDraft = null, unitDraftId = null;
 const attachedOpen = new Set();
 
 function openUnit(id, preset){
   const tracker = activeTracker();
-  if(!tracker){ toast("Create a tracker first"); return; }
+  if(!tracker){ toast("Create a plan first"); return; }
   const existing = id ? unitsOf(tracker)[id] : null;
   attachedOpen.clear();
   unitDraftId = id || fnv1a("u|" + Date.now() + "|" + Math.random());
@@ -2054,7 +2142,7 @@ function unitSheetHTML(existing){
     </div>
   </div>
   <div class="ufield">
-    <span class="ulabel">Learning areas this unit covers</span>
+    <span class="ulabel">Syllabuses this unit covers</span>
     <div class="urow" id="uklaf"></div>
   </div>
   <div class="ufield">
@@ -2117,11 +2205,18 @@ function wireUnitSheet(existing){
     const button = document.querySelector("#uresults [data-attach='" + kind + "|" + key + "']");
     if(button){ button.disabled = false; button.textContent = kind==="fa" ? "+ focus area" : "+ point"; }
   });
+  /* a content point is meaningless without the outcome it sits under, so attaching
+     one attaches its focus area too. Removing a point leaves the area alone. */
+  function attachPoint(key){
+    unitDraft.pt[key] = true;
+    const parent = PT_BY_KEY.get(key);
+    if(parent) unitDraft.fa[parent.r._fk] = true;
+  }
   document.getElementById("uresults").addEventListener("click", e=>{
     const group = e.target.closest("[data-attachgroup]");
     if(group && !group.disabled){
       group.dataset.attachgroup.split(",").forEach(key=>{
-        unitDraft.pt[key] = true;
+        attachPoint(key);
         const button = document.querySelector("#uresults [data-attach='pt|" + key + "']");
         if(button){ button.disabled = true; button.textContent = "added"; }
       });
@@ -2132,8 +2227,12 @@ function wireUnitSheet(existing){
     const add = e.target.closest("[data-attach]");
     if(!add || add.disabled) return;
     const [kind,key] = add.dataset.attach.split("|");
-    unitDraft[kind][key] = true;
+    if(kind === "pt") attachPoint(key); else unitDraft[kind][key] = true;
     add.disabled = true; add.textContent = "added";
+    /* the parent may have just been attached behind the scenes */
+    const parentBtn = kind === "pt" && PT_BY_KEY.get(key)
+      ? document.querySelector("#uresults [data-attach='fa|" + PT_BY_KEY.get(key).r._fk + "']") : null;
+    if(parentBtn && !parentBtn.disabled){ parentBtn.disabled = true; parentBtn.textContent = "added"; }
     renderUnitAttached();
   });
   renderUnitAttached();
@@ -2229,7 +2328,7 @@ function renderUnitResults(){
     .split(/\s+/).filter(w=>w.length>1);
   const klas = Object.keys(unitDraft.klas);
   if(!klas.length){
-    host.innerHTML = `<p class="upickhint">Choose at least one learning area above.</p>`;
+    host.innerHTML = `<p class="upickhint">Choose at least one syllabus above.</p>`;
     return;
   }
   /* Browse by default. Once a year group and learning areas are chosen the list is
@@ -2391,6 +2490,38 @@ async function pushUnit(tracker, id, unit, tickPairs){
 
 /* ---------- wiring ---------- */
 document.getElementById("scopeout").addEventListener("click", e=>{
+  const start = e.target.closest("[data-start]");
+  if(start){
+    const action = start.dataset.start;
+    if(action === "guided"){
+      scopeSetup = {step:"year", year:"", name:""};
+    } else if(action === "self"){
+      setTracking(true, false);
+      openNameRow("new");
+      return;
+    } else if(action === "cancel"){
+      scopeSetup = null;
+    } else if(action === "toname"){
+      scopeSetup.step = "name";
+      scopeSetup.name = scopeSetup.name || (scopeSetup.year + " — " + new Date().getFullYear());
+    } else if(action === "back"){
+      scopeSetup.name = document.getElementById("startname").value;
+      scopeSetup.step = "year";
+    } else if(action === "create"){
+      createPlan(scopeSetup.year, document.getElementById("startname").value);
+      return;
+    }
+    renderScope();
+    const field = document.getElementById("startname");
+    if(field){ field.focus(); field.select(); }
+    return;
+  }
+  const yearChip = e.target.closest("[data-year]");
+  if(yearChip && scopeSetup){
+    scopeSetup.year = yearChip.dataset.year;
+    renderScope();
+    return;
+  }
   const open = e.target.closest("[data-unit]");
   if(open){ openUnit(open.dataset.unit); return; }
   const add = e.target.closest("[data-add]");
