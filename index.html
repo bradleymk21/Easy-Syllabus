@@ -557,7 +557,8 @@ body.noscroll{overflow:hidden}
               <button class="btn popitem" id="trkren" type="button">Rename this plan</button>
               <button class="btn popitem" id="trkdel" type="button">Delete</button>
               <button class="btn popitem" id="trkjoin" type="button">Join with a code</button>
-              <button class="btn popitem" id="trkexp" type="button">Export a backup</button>
+              <button class="btn popitem" id="trkxlsx" type="button">Export scope and sequence (Excel)</button>
+              <button class="btn popitem" id="trkexp" type="button">Export a backup file</button>
               <button class="btn popitem" id="trkimp" type="button">Import a backup</button>
             </span>
           </span>
@@ -2580,6 +2581,205 @@ function updateTrackerLabels(){
 function updateFilterLabels(){
   updateTrackerLabels();
 }
+/* ---------- scope and sequence workbook ----------
+   A minimal .xlsx writer: an xlsx is an OPC ZIP of XML parts, and ZIP permits
+   stored (uncompressed) entries, so no compression library is needed. */
+const CRC_TABLE = (()=>{ const t=[];
+  for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; }
+  return t; })();
+function crc32(bytes){
+  let c = 0xFFFFFFFF;
+  for(let i=0;i<bytes.length;i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+const xlBytes = str => new TextEncoder().encode(str);
+
+function zipStore(files){
+  const chunks=[], central=[];
+  let offset=0;
+  const u16=n=>[n&0xFF,(n>>8)&0xFF];
+  const u32=n=>[n&0xFF,(n>>8)&0xFF,(n>>16)&0xFF,(n>>24)&0xFF];
+  files.forEach(({name,data})=>{
+    const nameBytes=xlBytes(name), crc=crc32(data), size=data.length;
+    const local=[...u32(0x04034b50),...u16(20),...u16(0x800),...u16(0),...u16(0),...u16(0),
+      ...u32(crc),...u32(size),...u32(size),...u16(nameBytes.length),...u16(0)];
+    chunks.push(new Uint8Array(local), nameBytes, data);
+    central.push([...u32(0x02014b50),...u16(20),...u16(20),...u16(0x800),...u16(0),...u16(0),...u16(0),
+      ...u32(crc),...u32(size),...u32(size),...u16(nameBytes.length),...u16(0),...u16(0),
+      ...u16(0),...u16(0),...u32(0),...u32(offset)], nameBytes);
+    offset += local.length + nameBytes.length + size;
+  });
+  const cdStart=offset; const cdParts=[];
+  for(let i=0;i<central.length;i+=2){
+    cdParts.push(new Uint8Array(central[i]), central[i+1]);
+    offset += central[i].length + central[i+1].length;
+  }
+  const end=new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),
+    ...u16(files.length),...u16(files.length),...u32(offset-cdStart),...u32(cdStart),...u16(0)]);
+  const all=[...chunks,...cdParts,end];
+  const total=all.reduce((a,b)=>a+b.length,0);
+  const out=new Uint8Array(total); let p=0;
+  all.forEach(b=>{ out.set(b,p); p+=b.length; });
+  return out;
+}
+
+const xlEsc = s => String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;").replace(/\x1b/g,"");
+function xlCol(i){ let n="",x=i; do{ n=String.fromCharCode(65+(x%26))+n; x=Math.floor(x/26)-1; }while(x>=0); return n; }
+const XL_STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+  `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
+  `<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font>` +
+  `<font><b/><sz val="11"/><name val="Calibri"/></font>` +
+  `<font><b/><sz val="14"/><name val="Calibri"/></font></fonts>` +
+  `<fills count="2"><fill><patternFill patternType="none"/></fill>` +
+  `<fill><patternFill patternType="gray125"/></fill></fills>` +
+  `<borders count="1"><border/></borders>` +
+  `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>` +
+  `<cellXfs count="4">` +
+  `<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0"/>` +
+  `<xf xfId="0" numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1"/>` +
+  `<xf xfId="0" numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1">` +
+  `<alignment wrapText="1" vertical="top"/></xf>` +
+  `<xf xfId="0" numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1"/>` +
+  `</cellXfs>` +
+  `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>` +
+  `</styleSheet>`;
+/* style ids: 0 plain, 1 bold, 2 wrapped, 3 title */
+function xlSheetXml(rows, widths, styleFor){
+  const cols = widths && widths.length
+    ? `<cols>` + widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("") + `</cols>`
+    : "";
+  const body = rows.map((cells,r)=>
+    `<row r="${r+1}">` + cells.map((v,c)=>{
+      if(v==null||v==="") return "";
+      const st = styleFor ? styleFor(r,c) : 0;
+      return `<c r="${xlCol(c)}${r+1}"${st?` s="${st}"`:""} t="inlineStr">` +
+        `<is><t xml:space="preserve">${xlEsc(v)}</t></is></c>`;
+    }).join("") + `</row>`).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${cols}` +
+    `<sheetData>${body}</sheetData></worksheet>`;
+}
+function buildWorkbook(sheets){   // [{name, rows:[[cell,...]]}]
+  const files=[];
+  const NS="http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+  files.push({name:"[Content_Types].xml", data:xlBytes(
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+    `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+    `<Default Extension="xml" ContentType="application/xml"/>` +
+    `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
+    `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
+    sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("") +
+    `</Types>`)});
+  files.push({name:"_rels/.rels", data:xlBytes(
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+    `<Relationship Id="rId1" Type="${NS}/officeDocument" Target="xl/workbook.xml"/></Relationships>`)});
+  files.push({name:"xl/workbook.xml", data:xlBytes(
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="${NS}"><sheets>` +
+    sheets.map((s,i)=>`<sheet name="${xlEsc(s.name).slice(0,31)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("") +
+    `</sheets></workbook>`)});
+  files.push({name:"xl/_rels/workbook.xml.rels", data:xlBytes(
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+    sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="${NS}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("") +
+    `<Relationship Id="rIdStyles" Type="${NS}/styles" Target="styles.xml"/>` +
+    `</Relationships>`)});
+  files.push({name:"xl/styles.xml", data:xlBytes(XL_STYLES)});
+  sheets.forEach((s,i)=>files.push({name:`xl/worksheets/sheet${i+1}.xml`,
+    data:xlBytes(xlSheetXml(s.rows, s.widths, s.styleFor))}));
+  return zipStore(files);
+}
+
+/* ---------- the sheets themselves ---------- */
+/* group a unit's attached content by focus area — the shape the editor shows */
+function unitContentGroups(unit){
+  const groups=new Map();
+  Object.keys(unit.fa||{}).forEach(key=>{
+    const r=FA_BY_KEY.get(key); if(r) groups.set(key,{r,points:[]});
+  });
+  Object.keys(unit.pt||{}).forEach(key=>{
+    const hit=PT_BY_KEY.get(key); if(!hit) return;
+    if(!groups.has(hit.r._fk)) groups.set(hit.r._fk,{r:hit.r,points:[]});
+    groups.get(hit.r._fk).points.push(hit.it);
+  });
+  groups.forEach(entry=>{
+    const order=[]; entry.r.g.forEach(g=>g.i.forEach(it=>order.push(it._pk)));
+    entry.points.sort((a,b)=>order.indexOf(a._pk)-order.indexOf(b._pk));
+  });
+  return [...groups.values()].sort((a,b)=>
+    (KLA_ORDER.get(a.r.k) ?? 99)-(KLA_ORDER.get(b.r.k) ?? 99) || a.r._i-b.r._i);
+}
+
+function scopeWorkbookSheets(){
+  const plan = activeTracker();
+  const units = Object.entries(unitsOf(plan));
+  const when = new Date().toLocaleDateString("en-AU",{day:"numeric",month:"long",year:"numeric"});
+  const byWeek = (a,b)=>(a[1].wkFrom||99)-(b[1].wkFrom||99) || a[1].name.localeCompare(b[1].name);
+  const NL = String.fromCharCode(10);
+
+  const overview = [
+    [plan.name],
+    [(plan.year || "All year groups") + " · scope and sequence · generated " + when],
+    [],
+    ["Syllabus"].concat(TRACK_TERMS.map(([,label])=>label))
+  ];
+  KLAS.forEach(([k,label])=>{
+    overview.push([label].concat(TRACK_TERMS.map(([term])=>
+      units.filter(([,u])=>u.term===term && u.klas && u.klas[k]).sort(byWeek)
+        .map(([,u])=>{ const w=unitWeeks(u); return u.name + (w?" ("+w+")":"") + (u.taught?" ✓":""); })
+        .join(NL))));
+  });
+
+  const termSheets = TRACK_TERMS.map(([term,label])=>{
+    const rows=[["Unit","Weeks","Syllabus","Stage","Outcomes","Focus area","Content point","Taught"]];
+    units.filter(([,u])=>u.term===term).sort(byWeek).forEach(([,u])=>{
+      const weeks = unitWeeks(u).replace("Wk ","");
+      const groups = unitContentGroups(u);
+      if(!groups.length){
+        rows.push([u.name, weeks, "", "", "", "", "No syllabus content attached yet", u.taught||""]);
+        return;
+      }
+      groups.forEach(entry=>{
+        const codes = entry.r.o.filter(o=>o.c).map(o=>o.c).join(", ");
+        if(!entry.points.length){
+          rows.push([u.name, weeks, entry.r.kla, entry.r.sh, codes, entry.r.t, "", u.taught||""]);
+          return;
+        }
+        entry.points.forEach(it=>
+          rows.push([u.name, weeks, entry.r.kla, entry.r.sh, codes, entry.r.t, it.t, u.taught||""]));
+      });
+    });
+    if(rows.length===1) rows.push(["No units planned for this term"]);
+    return {name:label, widths:[26,9,16,7,24,30,64,8],
+            styleFor:(r,c)=> r===0 ? 1 : c===6 ? 2 : 0, rows};
+  });
+
+  return [{name:"Year overview", widths:[18,30,30,30,30],
+           styleFor:(r,c)=> r===0 ? 3 : r===3 ? 1 : r>3 ? 2 : 0, rows:overview}]
+         .concat(termSheets);
+}
+
+function exportScopeWorkbook(){
+  const plan = activeTracker();
+  if(!plan){ toast("Create a plan first"); return; }
+  if(!Object.keys(unitsOf(plan)).length){ toast("Add some units to the plan first"); return; }
+  const blob = new Blob([buildWorkbook(scopeWorkbookSheets())],
+    {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (plan.name.replace(/[^\w\s-]+/g,"").trim().replace(/\s+/g,"-").toLowerCase()
+                || "plan") + "-scope-and-sequence.xlsx";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  toast("Scope and sequence downloaded");
+}
+document.getElementById("trkxlsx").addEventListener("click", exportScopeWorkbook);
+
 render();
 renderWork();
 </script>
