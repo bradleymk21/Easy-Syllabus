@@ -1131,17 +1131,13 @@ function updateProgress(list){
     `<b>${done}</b> of <b>${total}</b> focus area${total===1?"":"s"} taught`;
   document.getElementById("trkbar").style.width = total ? (done/total*100).toFixed(1)+"%" : "0";
 
-  /* a content group counts as covered once every content point inside it is ticked */
-  let groups = 0, groupsDone = 0, points = 0, pointsDone = 0;
+  let points = 0, pointsDone = 0;
   list.forEach(r=>r.g.forEach(g=>{
-    if(!g.i.length) return;
-    const ticked = tracker ? g.i.filter(it=>tracker.pt[it._pk]).length : 0;
-    groups++; points += g.i.length; pointsDone += ticked;
-    if(ticked===g.i.length) groupsDone++;
+    points += g.i.length;
+    if(tracker) pointsDone += g.i.filter(it=>tracker.pt[it._pk]).length;
   }));
   document.getElementById("trkprog2").innerHTML =
-    `<b>${groupsDone}</b> of <b>${groups}</b> content group${groups===1?"":"s"} &middot; ` +
-    `<b>${pointsDone}</b> of <b>${points}</b> content point${points===1?"":"s"}`;
+    `<b>${pointsDone}</b> of <b>${points}</b> content point${points===1?"":"s"} ticked`;
 }
 
 /* the focus areas the current filters cover, ignoring the search box */
