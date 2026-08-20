@@ -512,6 +512,7 @@ body.noscroll{overflow:hidden}
             aria-label="More actions">&#8943;</button>
           <span class="pop pop-right" id="morepop" hidden>
             <button class="btn popitem" id="expand">Expand all focus areas</button>
+            <button class="btn popitem" id="hidetaught" type="button">Hide what I&rsquo;ve already taught</button>
             <button class="btn popitem" id="reset">Reset search and filters</button>
             <button class="btn popitem" id="topjoin" type="button">Join a plan with a code</button>
           </span>
@@ -530,14 +531,6 @@ body.noscroll{overflow:hidden}
               <span class="popttl">Record new ticks as</span>
               <div class="fgroup" id="trktermf"></div>
               <p class="pophelp">Changing this does not alter ticks already made.</p>
-            </span>
-          </span>
-          <span class="popwrap">
-            <button class="btn ddbtn" id="trkviewbtn" type="button" aria-haspopup="true"
-              aria-expanded="false">Showing all</button>
-            <span class="pop" id="trkviewpop" hidden>
-              <span class="popttl">Show</span>
-              <div class="fgroup" id="trkviewf"></div>
             </span>
           </span>
           <span class="tprog tprogstack">
@@ -1029,8 +1022,7 @@ function render(){
   if(!m.length){
     const hiddenByTracker = track.on && track.view!=="all" && base.length;
     out.innerHTML = `<div class="empty"><p>${hiddenByTracker
-      ? (track.view==="taught" ? "Nothing in this scope is ticked as taught yet."
-                              : "Everything in this scope is ticked as taught.")
+      ? "Everything in this scope is ticked as taught."
       : "Nothing matches those filters."}</p>
       <button class="btn" onclick="document.getElementById('reset').click()">Clear search and filters</button></div>`;
     return;
@@ -1132,9 +1124,7 @@ function setView(view, updateHash=false){
      taught filter — both recording controls — have no place on it */
   const planning = view === "scope";
   const termWrap = document.getElementById("trktermbtn");
-  const viewWrap = document.getElementById("trkviewbtn");
   if(termWrap) termWrap.parentElement.hidden = planning;
-  if(viewWrap) viewWrap.parentElement.hidden = planning;
   viewButtons.forEach(button=>button.setAttribute("aria-selected", button.dataset.view===view));
   document.title = VIEW_TITLES[view] || VIEW_TITLES.syllabus;
   if(view==="scope" && scopeReady) renderScope();
@@ -1256,7 +1246,7 @@ document.addEventListener("keydown", e=>{
 /* ---------- teaching tracker ---------- */
 const TRACK_KEY = "easy-syllabus.tracker.v1";
 const TRACK_TERMS = [["T1","Term 1"],["T2","Term 2"],["T3","Term 3"],["T4","Term 4"]];
-const TRACK_VIEWS = [["all","All"],["taught","Taught"],["todo","Not yet taught"]];
+/* two states now: everything, or only what is still to teach */
 
 /* Stable identifiers. A tick must survive the page being rebuilt or reordered, so
    keys hash the syllabus wording itself rather than any position in DATA. */
@@ -1286,6 +1276,9 @@ function trackLoad(){
   try{
     const parsed = JSON.parse(localStorage.getItem(TRACK_KEY) || "null");
     if(parsed && Array.isArray(parsed.trackers)) track.store = parsed;
+    /* the term stamps every tick, so losing it on reload silently mislabels work.
+       Older payloads simply lack the field and fall back to Term 1. */
+    track.term = track.store.term || "T1";
   }catch(_){ /* unreadable or unavailable storage: carry on with an empty tracker */ }
 }
 /* A rejected write is reverted by the listener, so the change really is gone.
@@ -1697,10 +1690,13 @@ trackLoad();
 renderTrackerSelect();
 radioChips(document.getElementById("trktermf"), TRACK_TERMS, track.term, value=>{
   track.term = value;
+  track.store.term = value;
+  trackSave();
   updateTrackerLabels();
 });
-radioChips(document.getElementById("trkviewf"), TRACK_VIEWS, track.view, value=>{
-  track.view = value; render();
+document.getElementById("hidetaught").addEventListener("click", ()=>{
+  track.view = track.view === "todo" ? "all" : "todo";
+  render();
 });
 
 /* ---------- shared trackers ---------- */
@@ -2577,13 +2573,12 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeAllPops(); }
 /* the dropdown buttons say what is currently chosen, so nothing is hidden by being tidy */
 function updateTrackerLabels(){
   const termBtn = document.getElementById("trktermbtn");
-  const viewBtn = document.getElementById("trkviewbtn");
+  const viewBtn = document.getElementById("hidetaught");
   if(!termBtn || !viewBtn) return;
   const term = (TRACK_TERMS.find(([v])=>v===track.term) || [,"Term 1"])[1];
   termBtn.textContent = "Ticking as " + term;
-  const view = (TRACK_VIEWS.find(([v])=>v===track.view) || [,"All"])[1];
-  viewBtn.textContent = track.view === "all" ? "Showing all" : "Showing " + view.toLowerCase();
-  viewBtn.classList.toggle("on", track.view !== "all");
+  viewBtn.textContent = track.view === "todo"
+    ? "Show everything again" : "Hide what I\u2019ve already taught";
 }
 function updateFilterLabels(){
   updateTrackerLabels();
