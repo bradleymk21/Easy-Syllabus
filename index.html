@@ -1071,7 +1071,8 @@ function trackSave(){
     if(tracker) tracker.updated = new Date().toISOString();
     try{
       localStorage.setItem(TRACK_KEY, JSON.stringify(track.store));
-      setSaved("Saved on this device", false);
+      /* say which it is: a shared tracker is not merely on this device */
+      setSaved(tracker && tracker.remote ? "Shared with your team" : "Saved on this device", false);
     }catch(_){
       setSaved("Not saved — export a backup", true);
     }
