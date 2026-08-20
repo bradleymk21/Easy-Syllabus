@@ -915,7 +915,7 @@ function render(){
     return;
   }
   out.innerHTML = m.map(faHTML).join("");
-  if(!document.getElementById("scope-view").hidden) renderScope();
+  if(scopeReady && !document.getElementById("scope-view").hidden) renderScope();
 }
 
 /* Australian Curriculum work samples */
@@ -987,6 +987,10 @@ function renderWork(){
 
 /* events */
 const viewButtons = [...document.querySelectorAll("[data-view]")];
+/* setView runs long before the tracker and scope modules below, so arriving on
+   #scope must not try to draw the planner yet. `var` deliberately: a const or let
+   here would throw from inside setView instead of reading as false. */
+var scopeReady = false;
 const VIEW_PANELS = {syllabus:"syllabus-view", scope:"scope-view",
                      assessment:"assessment-view", "work-samples":"work-samples-view"};
 const VIEW_HASHES = {syllabus:"#syllabus", scope:"#scope",
@@ -1005,7 +1009,7 @@ function setView(view, updateHash=false){
   document.getElementById("trackbar").hidden = !(view==="syllabus" || view==="scope");
   viewButtons.forEach(button=>button.setAttribute("aria-selected", button.dataset.view===view));
   document.title = VIEW_TITLES[view] || VIEW_TITLES.syllabus;
-  if(view==="scope") renderScope();
+  if(view==="scope" && scopeReady) renderScope();
   if(updateHash) history.replaceState(null,"",VIEW_HASHES[view]);
 }
 viewButtons.forEach(button=>button.addEventListener("click",()=>setView(button.dataset.view,true)));
@@ -2172,6 +2176,10 @@ document.getElementById("scopeprint").addEventListener("click", ()=>{
   window.print();
   setTimeout(()=>document.body.classList.remove("scopeprint"), 500);
 });
+
+/* everything the planner needs now exists; draw it if we landed on #scope */
+scopeReady = true;
+if(!document.getElementById("scope-view").hidden) renderScope();
 
 render();
 renderWork();
