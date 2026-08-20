@@ -38,7 +38,7 @@ service cloud.firestore {
       }
 
       function validShape() {
-        return request.resource.data.keys().hasOnly(['name','created','updated','fa','pt','units'])
+        return request.resource.data.keys().hasOnly(['name','created','updated','year','fa','pt','units'])
                && request.resource.data.name is string
                && request.resource.data.fa is map
                && request.resource.data.pt is map;

@@ -355,6 +355,15 @@ body.noscroll{overflow:hidden}
 .upick .uadd:hover{color:#2F6F4E;border-color:#CFE0D5;background:#F4FAF6}
 .upick .uk{font-family:var(--mono);font-size:10px;color:var(--ink-3);flex:none;min-width:26px}
 .upickhint{font-size:12.5px;color:var(--ink-3);padding:8px 0}
+.ucodes{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-left:6px}
+.upoints{margin:0 0 4px 26px}
+.upoints>summary{cursor:pointer;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);
+  padding:3px 0;list-style:none}
+.upoints>summary::-webkit-details-marker{display:none}
+.upoints>summary::before{content:"\25B6";display:inline-block;margin-right:6px;font-size:9px;
+  transition:transform .15s}
+.upoints[open]>summary::before{transform:rotate(90deg)}
+.upoints>summary:hover{color:var(--ink)}
 .usheetacts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
   margin-top:20px;padding-top:15px;border-top:1px solid var(--line)}
 .usheetacts .grow{margin-left:auto}
@@ -464,8 +473,10 @@ body.noscroll{overflow:hidden}
         </div>
         <div class="trackrow" id="trknamerow" hidden>
           <span class="flabel" id="trknamelabel">New tracker</span>
-          <input class="tsel" id="trkname" type="text" autocomplete="off" style="max-width:340px"
-            placeholder="e.g. Year 4 — 2026, or 4B Mathematics — 2026" aria-label="Tracker name">
+          <input class="tsel" id="trkname" type="text" autocomplete="off" style="max-width:280px"
+            placeholder="e.g. 4B — 2026" aria-label="Tracker name">
+          <span class="flabel">Year group</span>
+          <div class="fgroup" id="trkyearf"></div>
           <button class="btn" id="trknameok" type="button">Save</button>
           <button class="btn" id="trknamecancel" type="button">Cancel</button>
         </div>
@@ -1454,15 +1465,32 @@ function trackImport(file){
 
 /* ---------- wiring ---------- */
 let nameMode = null;
+const TRACK_YEARS = [["","All years"]].concat(YEARS);
+let nameYear = "";
 function openNameRow(mode){
   const tracker = activeTracker();
   if(mode==="rename" && !tracker){ toast("Create a tracker first"); return; }
   nameMode = mode;
   document.getElementById("trknamelabel").textContent = mode==="rename" ? "Rename" : "New tracker";
   const input = document.getElementById("trkname");
-  input.value = mode==="rename" ? tracker.name : `Year 4 — ${new Date().getFullYear()}`;
+  input.value = mode==="rename" ? tracker.name : `4B — ${new Date().getFullYear()}`;
+  nameYear = mode==="rename" ? (tracker.year || "") : "Year 4";
+  const host = document.getElementById("trkyearf");
+  host.innerHTML = "";
+  radioChips(host, TRACK_YEARS, nameYear, value=>{ nameYear = value; });
   document.getElementById("trknamerow").hidden = false;
   input.focus(); input.select();
+}
+/* Setting the year on the tracker means nobody has to remember a filter chip on
+   another tab, and the unit picker can only ever offer this class's content. */
+function applyTrackerYear(){
+  const tracker = activeTracker();
+  const year = tracker && tracker.year;
+  state.year.clear();
+  if(year) state.year.add(year);
+  document.querySelectorAll("#yearf .chip").forEach(chip=>{
+    chip.setAttribute("aria-pressed", !!year && chip.textContent.trim() === year);
+  });
 }
 function closeNameRow(){
   nameMode = null;
@@ -1471,9 +1499,10 @@ function closeNameRow(){
 function commitNameRow(){
   const name = document.getElementById("trkname").value.trim();
   if(!name){ toast("Give the tracker a name"); return; }
-  if(nameMode==="rename"){ const tracker = activeTracker(); if(tracker) tracker.name = name; }
-  else makeTracker(name);
-  closeNameRow(); trackSave(); renderTrackerSelect(); render();
+  const tracker = nameMode==="rename" ? activeTracker() : makeTracker(name);
+  if(tracker){ tracker.name = name; tracker.year = nameYear; }
+  closeNameRow(); applyTrackerYear(); trackSave(); renderTrackerSelect(); render();
+  if(tracker && tracker.remote) pushTrackerDetails(tracker);
 }
 function setTracking(on, offerNewTracker){
   track.on = on;
@@ -1482,12 +1511,14 @@ function setTracking(on, offerNewTracker){
   button.setAttribute("aria-pressed", on);
   button.textContent = on ? "Tracking on" : "Tracking";
   if(on && offerNewTracker && !track.store.trackers.length) openNameRow("new");
+  if(on) applyTrackerYear();
   if(on) attachListener(activeTracker());
   render();
 }
 document.getElementById("track").addEventListener("click", ()=>setTracking(!track.on, true));
 document.getElementById("trksel").addEventListener("change", e=>{
   track.store.active = e.target.value || null;
+  applyTrackerYear();
   updateTrackerButtons();
   attachListener(activeTracker());
   trackSave(); render();
@@ -1661,6 +1692,10 @@ function applyRemote(tracker, data){
     tracker.name = data.name;
     renderTrackerSelect();
   }
+  if(data.year !== undefined && data.year !== tracker.year){
+    tracker.year = data.year;
+    if(live){ applyTrackerYear(); changed++; }
+  }
   if(!changed) return;
   trackSave();
   if(live && !document.getElementById("scope-view").hidden) renderScope();
@@ -1701,6 +1736,8 @@ async function shareTracker(){
     await fb.store.setDoc(trackerRef(fb, code), {
       name: tracker.name, created: tracker.created,
       updated: new Date().toISOString(), fa: tracker.fa, pt: tracker.pt,
+      /* the year group scopes every teammate's content picker, not just the owner's */
+      year: tracker.year || "",
       /* a year may already be planned before anyone thinks to share it */
       units: tracker.units || {}
     });
@@ -1734,11 +1771,12 @@ async function joinTracker(raw){
     const now = new Date().toISOString();
     const tracker = {id:fnv1a(code), name:data.name || "Shared tracker",
                      created:data.created || now, updated:data.updated || now,
+                     year:data.year || "",
                      fa:data.fa || {}, pt:data.pt || {}, units:data.units || {},
                      remote:{code}};
     track.store.trackers.push(tracker);
     track.store.active = tracker.id;
-    trackSave(); renderTrackerSelect(); render(); attachListener(tracker);
+    trackSave(); applyTrackerYear(); renderTrackerSelect(); render(); attachListener(tracker);
     closeShareRow();
     toast(`Joined “${tracker.name}”`);
   }catch(_){
@@ -1934,9 +1972,9 @@ function unitSheetHTML(existing){
     <div class="upicked" id="uattached"></div>
   </div>
   <div class="ufield">
-    <label class="ulabel" for="uq">Add content</label>
+    <label class="ulabel" for="uq">Add content from the syllabus</label>
     <input class="uinput" id="uq" type="search" autocomplete="off"
-      placeholder="Search the syllabuses this unit covers, e.g. fractions, sustainability">
+      placeholder="Filter this list, e.g. fractions">
     <div class="upicked" id="uresults" style="margin-top:9px"></div>
   </div>
   <div class="usheetacts">
@@ -2031,47 +2069,57 @@ function renderUnitAttached(){
 
 function renderUnitResults(){
   const host = document.getElementById("uresults");
-  const query = document.getElementById("uq").value.trim().toLowerCase();
-  const words = query.split(/\s+/).filter(w=>w.length>1);
+  const words = document.getElementById("uq").value.trim().toLowerCase()
+    .split(/\s+/).filter(w=>w.length>1);
   const klas = Object.keys(unitDraft.klas);
   if(!klas.length){
     host.innerHTML = `<p class="upickhint">Choose at least one learning area above.</p>`;
     return;
   }
-  if(!words.length){
-    host.innerHTML = `<p class="upickhint">Type to search ${klas.length===1?"this learning area":"these learning areas"}. Year-group filters on the Syllabus content tab narrow this too.</p>`;
-    return;
-  }
-  /* reuse the page's existing search index and year filtering */
+  /* Browse by default. Once a year group and learning areas are chosen the list is
+     short — Stage 2 has 2 HSIE focus areas, 4 in Creative Arts — so making anyone
+     guess a search term first was asking them to work for nothing. Search filters. */
+  const tracker = activeTracker();
+  const year = tracker && tracker.year;
   const found = DATA.filter(r=>{
     if(!klas.includes(r.k)) return false;
-    if(state.year.size && !r._years.some(y=>state.year.has(y))) return false;
+    if(year && !r._years.includes(year)) return false;
     return words.every(w=>r._s.includes(w));
-  }).slice(0, 25);
+  }).sort((a,b)=>
+    (KLA_ORDER.get(a.k) ?? 99) - (KLA_ORDER.get(b.k) ?? 99) ||
+    (STAGE_ORDER.get(a.st) ?? 99) - (STAGE_ORDER.get(b.st) ?? 99) || a._i - b._i
+  ).slice(0, 60);
   if(!found.length){
-    host.innerHTML = `<p class="upickhint">Nothing matches in ${klas.map(k=>KLAS.find(([key])=>key===k)[1]).join(", ")}.</p>`;
+    const areas = klas.map(k=>KLAS.find(([key])=>key===k)[1]).join(", ");
+    /* syllabus wording rarely matches staffroom wording — "geography" misses
+       "geographical" — so always say what clearing the filter would show */
+    const whole = words.length ? DATA.filter(r=>klas.includes(r.k) &&
+      (!year || r._years.includes(year))).length : 0;
+    host.innerHTML = `<p class="upickhint">      ${words.length ? `Nothing matches that filter. Clear it to see all ${whole} in ${esc(areas)}.`                     : `Nothing in ${esc(areas)}${year?" for "+esc(year):""}.`}</p>`;
     return;
   }
   host.innerHTML = found.map(r=>{
     const already = !!unitDraft.fa[r._fk];
+    const codes = r.o.filter(o=>o.c).map(o=>o.c).join(" ");
     const points = [];
-    r.g.forEach(g=>g.i.forEach(it=>{
-      if(words.every(w=>(g.t+" "+it.t+" "+it.n+" "+it.e).toLowerCase().includes(w))) points.push(it);
-    }));
+    r.g.forEach(g=>g.i.forEach(it=>points.push(it)));
     return `<div class="upick">
         <span class="uk">${esc(r.sh)}</span>
-        <span><b>${esc(r.t)}</b> <span style="color:var(--ink-3)">${esc(r.kla)}</span></span>
+        <span><b>${esc(r.t)}</b>` +
+        (codes ? ` <span class="ucodes">${esc(codes)}</span>` : "") +
+        `</span>
         <button class="uadd" type="button" data-attach="fa|${r._fk}" style="margin-left:auto"
           ${already?"disabled":""}>${already?"added":"+ focus area"}</button>
       </div>` +
-      points.slice(0,6).map(it=>{
-        const on = !!unitDraft.pt[it._pk];
-        return `<div class="upick" style="padding-left:34px">
-          <span>${esc(it.t)}</span>
-          <button class="uadd" type="button" data-attach="pt|${it._pk}" style="margin-left:auto"
-            ${on?"disabled":""}>${on?"added":"+ point"}</button>
-        </div>`;
-      }).join("");
+      (points.length ? `<details class="upoints"><summary>${points.length} content point${points.length===1?"":"s"}</summary>` +
+        points.map(it=>{
+          const on = !!unitDraft.pt[it._pk];
+          return `<div class="upick" style="padding-left:20px">
+            <span>${esc(it.t)}</span>
+            <button class="uadd" type="button" data-attach="pt|${it._pk}" style="margin-left:auto"
+              ${on?"disabled":""}>${on?"added":"+ point"}</button>
+          </div>`;
+        }).join("") + `</details>` : "");
   }).join("");
 }
 
@@ -2146,6 +2194,17 @@ function saveUnitQuietly(tracker){
   tracker.units[unitDraftId] = JSON.parse(JSON.stringify(unitDraft));
 }
 
+async function pushTrackerDetails(tracker){
+  try{
+    const fb = await firebaseReady();
+    await fb.store.updateDoc(trackerRef(fb, tracker.remote.code),
+      "name", tracker.name, "year", tracker.year || "",
+      "updated", new Date().toISOString());
+    noteSyncOk();
+  }catch(_){
+    noteSyncFailure("That change");
+  }
+}
 async function pushUnit(tracker, id, unit, tickPairs){
   if(!tracker.remote) return;
   try{
