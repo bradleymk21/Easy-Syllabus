@@ -227,6 +227,10 @@ body.tracking .trackbar{display:block}
 .tprog b{color:#fff}
 .tbar{width:110px;height:6px;border-radius:99px;background:#1E2A3D;overflow:hidden}
 .tbar i{display:block;height:100%;width:0;background:#4E9E6A;border-radius:99px;transition:width .25s}
+.tprogstack{flex-direction:column;align-items:flex-end;gap:4px}
+.tprogline{display:flex;align-items:center;gap:10px}
+.tprogsub{font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;color:#6F7F99}
+.tprogsub b{color:#9FB0CC;font-weight:600}
 .saved{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#6F8A74}
 .saved.warn{color:#C98A3E}
 
@@ -356,9 +360,12 @@ body.noscroll{overflow:hidden}
           <button class="btn" id="trknew" type="button">New</button>
           <button class="btn" id="trkren" type="button">Rename</button>
           <button class="btn" id="trkdel" type="button">Delete</button>
-          <span class="tprog">
-            <span id="trkprog">0 of 0 focus areas taught</span>
-            <span class="tbar"><i id="trkbar"></i></span>
+          <span class="tprog tprogstack">
+            <span class="tprogline">
+              <span id="trkprog">0 of 0 focus areas taught</span>
+              <span class="tbar"><i id="trkbar"></i></span>
+            </span>
+            <span class="tprogsub" id="trkprog2"></span>
           </span>
         </div>
         <div class="trackrow">
@@ -1028,8 +1035,12 @@ const faLabel = r => `${r.kla} — ${yearLabel(r)} — ${r.t}`;
 const FA_BY_KEY = new Map();
 const PT_BY_KEY = new Map();
 DATA.forEach(r=>{
-  FA_BY_KEY.set(faKey(r), r);
-  r.g.forEach(g=>g.i.forEach(it=>PT_BY_KEY.set(ptKey(r,g,it), {r,g,it})));
+  r._fk = faKey(r);
+  FA_BY_KEY.set(r._fk, r);
+  r.g.forEach(g=>g.i.forEach(it=>{
+    it._pk = ptKey(r,g,it);
+    PT_BY_KEY.set(it._pk, {r,g,it});
+  }));
 });
 
 const track = {on:false, term:"T1", view:"all", store:{active:null, trackers:[]}};
@@ -1115,10 +1126,22 @@ function trackFilter(list){
 function updateProgress(list){
   const tracker = activeTracker();
   const total = list.length;
-  const done = tracker ? list.filter(r=>tracker.fa[faKey(r)]).length : 0;
+  const done = tracker ? list.filter(r=>tracker.fa[r._fk]).length : 0;
   document.getElementById("trkprog").innerHTML =
     `<b>${done}</b> of <b>${total}</b> focus area${total===1?"":"s"} taught`;
   document.getElementById("trkbar").style.width = total ? (done/total*100).toFixed(1)+"%" : "0";
+
+  /* a content group counts as covered once every content point inside it is ticked */
+  let groups = 0, groupsDone = 0, points = 0, pointsDone = 0;
+  list.forEach(r=>r.g.forEach(g=>{
+    if(!g.i.length) return;
+    const ticked = tracker ? g.i.filter(it=>tracker.pt[it._pk]).length : 0;
+    groups++; points += g.i.length; pointsDone += ticked;
+    if(ticked===g.i.length) groupsDone++;
+  }));
+  document.getElementById("trkprog2").innerHTML =
+    `<b>${groupsDone}</b> of <b>${groups}</b> content group${groups===1?"":"s"} &middot; ` +
+    `<b>${pointsDone}</b> of <b>${points}</b> content point${points===1?"":"s"}`;
 }
 
 /* the focus areas the current filters cover, ignoring the search box */
