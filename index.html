@@ -364,6 +364,8 @@ body.noscroll{overflow:hidden}
   transition:transform .15s}
 .upoints[open]>summary::before{transform:rotate(90deg)}
 .upoints>summary:hover{color:var(--ink)}
+.ugroup{display:flex;gap:9px;align-items:center;margin:7px 0 2px;padding:5px 9px;
+  border-radius:6px;background:#EFF3F9;font-size:12.5px;font-weight:650;color:var(--ink)}
 .usheetacts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
   margin-top:20px;padding-top:15px;border-top:1px solid var(--line)}
 .usheetacts .grow{margin-left:auto}
@@ -2023,6 +2025,17 @@ function wireUnitSheet(existing){
     if(button){ button.disabled = false; button.textContent = kind==="fa" ? "+ focus area" : "+ point"; }
   });
   document.getElementById("uresults").addEventListener("click", e=>{
+    const group = e.target.closest("[data-attachgroup]");
+    if(group && !group.disabled){
+      group.dataset.attachgroup.split(",").forEach(key=>{
+        unitDraft.pt[key] = true;
+        const button = document.querySelector("#uresults [data-attach='pt|" + key + "']");
+        if(button){ button.disabled = true; button.textContent = "added"; }
+      });
+      group.disabled = true; group.textContent = "all added";
+      renderUnitAttached();
+      return;
+    }
     const add = e.target.closest("[data-attach]");
     if(!add || add.disabled) return;
     const [kind,key] = add.dataset.attach.split("|");
@@ -2101,8 +2114,7 @@ function renderUnitResults(){
   host.innerHTML = found.map(r=>{
     const already = !!unitDraft.fa[r._fk];
     const codes = r.o.filter(o=>o.c).map(o=>o.c).join(" ");
-    const points = [];
-    r.g.forEach(g=>g.i.forEach(it=>points.push(it)));
+    const total = r.g.reduce((a,g)=>a+g.i.length, 0);
     return `<div class="upick">
         <span class="uk">${esc(r.sh)}</span>
         <span><b>${esc(r.t)}</b>` +
@@ -2111,14 +2123,25 @@ function renderUnitResults(){
         <button class="uadd" type="button" data-attach="fa|${r._fk}" style="margin-left:auto"
           ${already?"disabled":""}>${already?"added":"+ focus area"}</button>
       </div>` +
-      (points.length ? `<details class="upoints"><summary>${points.length} content point${points.length===1?"":"s"}</summary>` +
-        points.map(it=>{
-          const on = !!unitDraft.pt[it._pk];
-          return `<div class="upick" style="padding-left:20px">
-            <span>${esc(it.t)}</span>
-            <button class="uadd" type="button" data-attach="pt|${it._pk}" style="margin-left:auto"
-              ${on?"disabled":""}>${on?"added":"+ point"}</button>
-          </div>`;
+      (total ? `<details class="upoints"><summary>${total} content point${total===1?"":"s"}</summary>` +
+        /* keep NESA's content groups, as the Syllabus content tab does — 54 points
+           in one flat list is unreadable, the same points under their headings are not */
+        r.g.map(g=>{
+          const keys = g.i.map(it=>it._pk);
+          const allOn = keys.every(k=>unitDraft.pt[k]);
+          return `<div class="ugroup">
+              <span>${esc(g.t)}</span>
+              <button class="uadd" type="button" data-attachgroup="${keys.join(",")}"
+                style="margin-left:auto" ${allOn?"disabled":""}>${allOn?"all added":"+ all "+keys.length}</button>
+            </div>` +
+            g.i.map(it=>{
+              const on = !!unitDraft.pt[it._pk];
+              return `<div class="upick" style="padding-left:20px">
+                <span>${esc(it.t)}</span>
+                <button class="uadd" type="button" data-attach="pt|${it._pk}" style="margin-left:auto"
+                  ${on?"disabled":""}>${on?"added":"+ point"}</button>
+              </div>`;
+            }).join("");
         }).join("") + `</details>` : "");
   }).join("");
 }
