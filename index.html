@@ -215,6 +215,7 @@ footer strong{color:var(--ink-2)}
 }
 
 /* ---------- teaching tracker ---------- */
+.trackbar[hidden]{display:none!important}
 .trackbar{display:none;margin-top:13px;padding:12px 14px;border:1px solid #33415A;
   border-radius:12px;background:#0D1421}
 body.tracking .trackbar{display:block}
@@ -301,6 +302,78 @@ body.noscroll{overflow:hidden}
 .sumnote{font-size:12.5px;color:var(--ink-3);margin:16px 0 0;padding-top:12px;
   border-top:1px dashed var(--line)}
 .sumempty{color:var(--ink-3);font-size:13.5px;padding:6px 0}
+/* ---------- scope and sequence ---------- */
+.scopewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+.scopegrid{width:100%;min-width:840px;border-collapse:separate;border-spacing:0}
+.scopegrid th,.scopegrid td{vertical-align:top;padding:9px 10px;
+  border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.scopegrid tr:last-child>*{border-bottom:0}
+.scopegrid tr>*:last-child{border-right:0}
+.scopegrid thead th{background:#F7F9FC;text-align:left;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.scopegrid tbody th{width:130px;text-align:left;font-size:13px;font-weight:650;
+  background:#FBFCFE;border-left:4px solid var(--kla)}
+.scopecell{min-width:158px}
+.unit{display:block;width:100%;text-align:left;font:inherit;cursor:pointer;margin-bottom:6px;
+  padding:7px 9px;border-radius:7px;background:#fff;
+  border:1px solid var(--line);border-left:3px solid var(--kla)}
+.unit:hover{background:#F7F9FC;border-color:#B9C4D4}
+.unit:focus-visible{outline:2px solid #5B8FD6;outline-offset:2px}
+.unit.taught{background:#F4FAF6;border-color:#CFE0D5;border-left-color:#3F8A5C}
+.unit .un{display:block;font-size:13px;font-weight:600;line-height:1.3}
+.unit .um{display:flex;flex-wrap:wrap;gap:8px;margin-top:3px;
+  font-family:var(--mono);font-size:10px;color:var(--ink-3)}
+.unit .ut{color:#2F6F4E;font-weight:700}
+.addunit{width:100%;font:inherit;font-size:12px;cursor:pointer;padding:5px 9px;border-radius:7px;
+  background:none;color:var(--ink-3);border:1px dashed var(--line)}
+.addunit:hover{color:var(--ink);border-color:#9FB0CC;background:#F7F9FC}
+
+/* unit editor */
+.ufield{margin-bottom:15px}
+.ulabel{display:block;margin-bottom:6px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.uinput{width:100%;font:inherit;font-size:14px;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--line);background:#fff;color:var(--ink)}
+.uinput:focus-visible{outline:2px solid #5B8FD6;outline-offset:1px}
+.urow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.uweek{width:74px}
+.uchip{font:inherit;font-size:12.5px;padding:5px 11px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:#fff;color:var(--ink-2)}
+.uchip:hover{border-color:#9FB0CC}
+.uchip:focus-visible{outline:2px solid #5B8FD6;outline-offset:2px}
+.uchip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.uchip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+.upicked{border:1px solid var(--line);border-radius:9px;padding:4px 12px;max-height:210px;overflow:auto}
+.upick{display:flex;gap:9px;align-items:flex-start;padding:6px 0;font-size:13.5px;
+  border-bottom:1px solid #EEF2F8}
+.upick:last-child{border-bottom:0}
+.upick .ux{flex:none;font:inherit;font-size:14px;line-height:1;padding:2px 6px;cursor:pointer;
+  border-radius:5px;border:1px solid var(--line);background:#fff;color:var(--ink-3)}
+.upick .ux:hover{color:#A8324F;border-color:#E3B9C4}
+.upick .uadd{flex:none;font:inherit;font-size:11px;font-family:var(--mono);padding:3px 8px;
+  cursor:pointer;border-radius:5px;border:1px solid var(--line);background:#fff;color:var(--ink-2)}
+.upick .uadd:hover{color:#2F6F4E;border-color:#CFE0D5;background:#F4FAF6}
+.upick .uk{font-family:var(--mono);font-size:10px;color:var(--ink-3);flex:none;min-width:26px}
+.upickhint{font-size:12.5px;color:var(--ink-3);padding:8px 0}
+.usheetacts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  margin-top:20px;padding-top:15px;border-top:1px solid var(--line)}
+.usheetacts .grow{margin-left:auto}
+.udanger{color:#A8324F;border-color:#E3B9C4}
+.udanger:hover{background:#FBF1F4;color:#8A2340}
+.utaughtnote{font-size:12.5px;color:var(--ink-3);margin:9px 0 0}
+
+@media (max-width:640px){
+  .scopegrid tbody th{width:104px;font-size:12.5px}
+}
+@media print{
+  body.scopeprint>*:not(#scope-view){display:none!important}
+  body.scopeprint #scope-view .meterbar{display:none!important}
+  body.scopeprint .scopewrap{overflow:visible;border:0}
+  body.scopeprint .scopegrid{min-width:0;font-size:10px}
+  body.scopeprint .addunit{display:none!important}
+  body.scopeprint .unit{break-inside:avoid}
+  @page{size:landscape}
+}
 
 @media print{
   body.report>*:not(.modal){display:none!important}
@@ -337,6 +410,8 @@ body.noscroll{overflow:hidden}
     <div class="viewnav" role="tablist" aria-label="Reference section">
       <button class="viewtab" id="tab-syllabus" type="button" role="tab" aria-selected="true"
         aria-controls="syllabus-view" data-view="syllabus">Syllabus content</button>
+      <button class="viewtab" id="tab-scope" type="button" role="tab" aria-selected="false"
+        aria-controls="scope-view" data-view="scope">Scope &amp; sequence</button>
       <button class="viewtab" id="tab-assessment" type="button" role="tab" aria-selected="false"
         aria-controls="assessment-view" data-view="assessment">Assessment</button>
       <button class="viewtab" id="tab-work" type="button" role="tab" aria-selected="false"
@@ -357,6 +432,7 @@ body.noscroll{overflow:hidden}
         <div class="fgroup" id="partf"><span class="flabel">Maths part</span></div>
       </div>
       <p class="filterhelp">Year groups focus the matching NESA stage. Maths Parts A and B can be selected independently.</p>
+    </div>
       <div class="trackbar" id="trackbar">
         <div class="trackrow">
           <span class="flabel">Tracker</span>
@@ -404,7 +480,6 @@ body.noscroll{overflow:hidden}
           <span class="saved" id="trksharemsg"></span>
         </div>
       </div>
-    </div>
     <div id="work-controls" hidden>
       <div class="searchrow">
         <input id="wsq" type="search" autocomplete="off" spellcheck="false"
@@ -435,6 +510,14 @@ body.noscroll{overflow:hidden}
     <button class="linkish" id="copyall" hidden>Copy these results as a list</button>
   </div>
   <div id="out"></div>
+</main>
+
+<main id="scope-view" role="tabpanel" aria-labelledby="tab-scope" hidden>
+  <div class="meterbar">
+    <span id="scopemeter"></span>
+    <button class="linkish" id="scopeprint" hidden>Print this scope and sequence</button>
+  </div>
+  <div id="scopeout"></div>
 </main>
 
 <main id="assessment-view" role="tabpanel" aria-labelledby="tab-assessment" hidden>
@@ -832,6 +915,7 @@ function render(){
     return;
   }
   out.innerHTML = m.map(faHTML).join("");
+  if(!document.getElementById("scope-view").hidden) renderScope();
 }
 
 /* Australian Curriculum work samples */
@@ -903,25 +987,30 @@ function renderWork(){
 
 /* events */
 const viewButtons = [...document.querySelectorAll("[data-view]")];
+const VIEW_PANELS = {syllabus:"syllabus-view", scope:"scope-view",
+                     assessment:"assessment-view", "work-samples":"work-samples-view"};
+const VIEW_HASHES = {syllabus:"#syllabus", scope:"#scope",
+                     assessment:"#assessment", "work-samples":"#work-samples"};
+const VIEW_TITLES = {syllabus:"NSW K-6 Syllabus Finder",
+                     scope:"Scope and sequence | NSW K-6 Syllabus Finder",
+                     assessment:"Assessment | NSW K-6 Syllabus Finder",
+                     "work-samples":"Work samples | NSW K-6 Syllabus Finder"};
 function setView(view, updateHash=false){
-  const syllabus = view === "syllabus";
-  const assessment = view === "assessment";
-  const workSamples = view === "work-samples";
-  document.getElementById("syllabus-view").hidden = !syllabus;
-  document.getElementById("assessment-view").hidden = !assessment;
-  document.getElementById("work-samples-view").hidden = !workSamples;
-  document.getElementById("content-controls").hidden = !syllabus;
-  document.getElementById("work-controls").hidden = !workSamples;
+  Object.entries(VIEW_PANELS).forEach(([name,id])=>{
+    document.getElementById(id).hidden = name !== view;
+  });
+  document.getElementById("content-controls").hidden = view !== "syllabus";
+  document.getElementById("work-controls").hidden = view !== "work-samples";
+  /* the tracker belongs to ticking and planning alike */
+  document.getElementById("trackbar").hidden = !(view==="syllabus" || view==="scope");
   viewButtons.forEach(button=>button.setAttribute("aria-selected", button.dataset.view===view));
-  document.title = assessment ? "Assessment | NSW K-6 Syllabus Finder" :
-    workSamples ? "Work samples | NSW K-6 Syllabus Finder" : "NSW K-6 Syllabus Finder";
-  if(updateHash){
-    const hashes={syllabus:"#syllabus",assessment:"#assessment","work-samples":"#work-samples"};
-    history.replaceState(null,"",hashes[view]);
-  }
+  document.title = VIEW_TITLES[view] || VIEW_TITLES.syllabus;
+  if(view==="scope") renderScope();
+  if(updateHash) history.replaceState(null,"",VIEW_HASHES[view]);
 }
 viewButtons.forEach(button=>button.addEventListener("click",()=>setView(button.dataset.view,true)));
-const initialView=["#assessment","#common-grade-scale"].includes(location.hash) ? "assessment" :
+const initialView=["#scope","#scope-and-sequence"].includes(location.hash) ? "scope" :
+  ["#assessment","#common-grade-scale"].includes(location.hash) ? "assessment" :
   ["#work-samples","#work"].includes(location.hash) ? "work-samples" : "syllabus";
 setView(initialView);
 
@@ -1067,6 +1156,18 @@ function trackLoad(){
     if(parsed && Array.isArray(parsed.trackers)) track.store = parsed;
   }catch(_){ /* unreadable or unavailable storage: carry on with an empty tracker */ }
 }
+/* A rejected write is reverted by the listener, so the change really is gone.
+   Never let the routine local save overwrite that warning with reassurance. */
+let syncFailed = false;
+function noteSyncFailure(what){
+  syncFailed = true;
+  setSaved("Not saved to the shared tracker", true);
+  toast(what + " could not be saved to the shared tracker");
+}
+function noteSyncOk(){
+  syncFailed = false;
+  setSaved("Shared with your team", false);
+}
 let trackSaveTimer;
 function trackSave(){
   clearTimeout(trackSaveTimer);
@@ -1075,6 +1176,7 @@ function trackSave(){
     if(tracker) tracker.updated = new Date().toISOString();
     try{
       localStorage.setItem(TRACK_KEY, JSON.stringify(track.store));
+      if(syncFailed) return;   // leave the warning standing
       /* say which it is: a shared tracker is not merely on this device */
       setSaved(tracker && tracker.remote ? "Shared with your team" : "Saved on this device", false);
     }catch(_){
@@ -1305,7 +1407,8 @@ function trackExport(){
       fa:Object.entries(tracker.fa).map(([k,v])=>
         ({k, t:v.t, label:FA_BY_KEY.has(k)?faLabel(FA_BY_KEY.get(k)):null})),
       pt:Object.entries(tracker.pt).map(([k,v])=>
-        ({k, t:v.t, label:PT_BY_KEY.has(k)?PT_BY_KEY.get(k).it.t:null}))
+        ({k, t:v.t, label:PT_BY_KEY.has(k)?PT_BY_KEY.get(k).it.t:null})),
+      units:tracker.units || {}
     }
   };
   const blob = new Blob([JSON.stringify(payload,null,2)], {type:"application/json"});
@@ -1334,6 +1437,10 @@ function trackImport(file){
     const merged = target.fa && Object.keys(target.fa).length;
     (incoming.fa||[]).forEach(e=>{ if(e && e.k) target.fa[e.k] = {t:e.t || "T1"}; });
     (incoming.pt||[]).forEach(e=>{ if(e && e.k) target.pt[e.k] = {t:e.t || "T1"}; });
+    if(incoming.units){
+      if(!target.units) target.units = {};
+      Object.entries(incoming.units).forEach(([id,unit])=>{ target.units[id] = unit; });
+    }
     track.store.active = target.id;
     trackSave(); renderTrackerSelect(); render();
     toast(merged ? `Merged into “${name}”` : `Imported “${name}”`);
@@ -1424,10 +1531,13 @@ document.getElementById("trkfile").addEventListener("change", e=>{
   e.target.value = "";
 });
 document.getElementById("summary").addEventListener("click", e=>{
-  if(e.target.id==="summary") closeSummary();
+  if(e.target.id!=="summary") return;
+  unitDraft ? closeUnit() : closeSummary();
 });
 document.addEventListener("keydown", e=>{
-  if(e.key==="Escape" && !document.getElementById("summary").hidden) closeSummary();
+  if(e.key==="Escape" && !document.getElementById("summary").hidden){
+    unitDraft ? closeUnit() : closeSummary();
+  }
 });
 
 trackLoad();
@@ -1532,16 +1642,28 @@ function applyRemote(tracker, data){
       }
     });
   });
+  const incomingUnits = data.units || {};
+  if(!tracker.units) tracker.units = {};
+  Object.keys(incomingUnits).forEach(id=>{
+    if(stableJSON(tracker.units[id]) !== stableJSON(incomingUnits[id])){
+      tracker.units[id] = incomingUnits[id];
+      changed++;
+    }
+  });
+  Object.keys(tracker.units).forEach(id=>{
+    if(!incomingUnits[id]){ delete tracker.units[id]; changed++; }
+  });
   if(data.name && data.name !== tracker.name){
     tracker.name = data.name;
     renderTrackerSelect();
   }
   if(!changed) return;
   trackSave();
+  if(live && !document.getElementById("scope-view").hidden) renderScope();
   /* a card may now belong on the other side of the taught / not-yet filter */
   if(live && track.view !== "all") render();
   else if(live) updateProgress(matches());
-  setSaved("Shared · updated just now", false);
+  if(!syncFailed) setSaved("Shared · updated just now", false);
 }
 
 async function pushTick(tracker, key, isPoint, value){
@@ -1553,9 +1675,9 @@ async function pushTick(tracker, key, isPoint, value){
     await fb.store.updateDoc(trackerRef(fb, tracker.remote.code),
       path, value === null ? fb.store.deleteField() : value,
       "updated", new Date().toISOString());
-    setSaved("Shared · synced", false);
+    noteSyncOk();
   }catch(_){
-    setSaved("Sync failed — saved on this device", true);
+    noteSyncFailure("That tick");
   }
 }
 
@@ -1674,6 +1796,381 @@ document.getElementById("trksharecancel").addEventListener("click", closeShareRo
 document.getElementById("trksharecode").addEventListener("keydown", e=>{
   if(e.key==="Enter" && !e.target.readOnly){ e.preventDefault(); joinTracker(e.target.value); }
   if(e.key==="Escape"){ e.preventDefault(); closeShareRow(); }
+});
+
+/* ---------- scope and sequence ---------- */
+const SCOPE_MAX_WEEK = 11;
+const unitsOf = tracker => (tracker && tracker.units) || {};
+
+/* key order differs between a local object and the same object back from Firestore,
+   so compare canonically rather than by raw JSON */
+function stableJSON(value){
+  if(value === null || typeof value !== "object") return JSON.stringify(value);
+  if(Array.isArray(value)) return "[" + value.map(stableJSON).join(",") + "]";
+  return "{" + Object.keys(value).sort()
+    .map(k=>JSON.stringify(k) + ":" + stableJSON(value[k])).join(",") + "}";
+}
+const unitWeeks = u => !u.wkFrom ? ""
+  : (u.wkTo && u.wkTo !== u.wkFrom) ? `Wk ${u.wkFrom}–${u.wkTo}` : `Wk ${u.wkFrom}`;
+const unitCount = u => Object.keys(u.fa||{}).length + Object.keys(u.pt||{}).length;
+
+/* ---------- the grid ---------- */
+function renderScope(){
+  const host = document.getElementById("scopeout");
+  const meter = document.getElementById("scopemeter");
+  const printBtn = document.getElementById("scopeprint");
+  const tracker = activeTracker();
+  if(!track.on || !tracker){
+    host.innerHTML = `<div class="empty">
+      <p>Turn on Tracking and choose a tracker to plan units of work across the year.</p>
+      <button class="btn" onclick="document.getElementById('track').click()">Turn on Tracking</button>
+    </div>`;
+    meter.textContent = "";
+    printBtn.hidden = true;
+    return;
+  }
+  const units = Object.entries(unitsOf(tracker));
+  const taught = units.filter(([,u])=>u.taught).length;
+  meter.innerHTML = `<b>${units.length}</b> unit${units.length===1?"":"s"} planned` +
+    (units.length ? ` &middot; <b>${taught}</b> marked taught` : "");
+  printBtn.hidden = !units.length;
+
+  let h = `<div class="scopewrap"><table class="scopegrid"><thead><tr><th>Learning area</th>`;
+  TRACK_TERMS.forEach(([,label])=>{ h += `<th>${esc(label)}</th>`; });
+  h += `</tr></thead><tbody>`;
+  KLAS.forEach(([k,label])=>{
+    h += `<tr style="--kla:var(--${k})"><th>${esc(label)}</th>`;
+    TRACK_TERMS.forEach(([term])=>{
+      const cell = units
+        .filter(([,u])=>u.term===term && u.klas && u.klas[k])
+        .sort((a,b)=>(a[1].wkFrom||99)-(b[1].wkFrom||99) || a[1].name.localeCompare(b[1].name));
+      h += `<td class="scopecell">`;
+      cell.forEach(([id,u])=>{
+        const weeks = unitWeeks(u);
+        const spans = Object.keys(u.klas||{}).length;
+        const points = unitCount(u);
+        h += `<button class="unit${u.taught?" taught":""}" type="button" data-unit="${id}">
+          <span class="un">${esc(u.name || "Untitled unit")}</span>
+          <span class="um">` +
+          (weeks ? `<span>${weeks}</span>` : "") +
+          (spans > 1 ? `<span>${spans} areas</span>` : "") +
+          (points ? `<span>${points} content</span>` : "") +
+          (u.taught ? `<span class="ut">&#10003; ${esc(u.taught)}</span>` : "") +
+          `</span></button>`;
+      });
+      h += `<button class="addunit" type="button" data-add="${k}|${term}">+ Unit</button></td>`;
+    });
+    h += `</tr>`;
+  });
+  host.innerHTML = h + `</tbody></table></div>`;
+}
+
+/* ---------- unit editor ---------- */
+let unitDraft = null, unitDraftId = null;
+
+function openUnit(id, preset){
+  const tracker = activeTracker();
+  if(!tracker){ toast("Create a tracker first"); return; }
+  const existing = id ? unitsOf(tracker)[id] : null;
+  unitDraftId = id || fnv1a("u|" + Date.now() + "|" + Math.random());
+  unitDraft = existing
+    ? JSON.parse(JSON.stringify(existing))
+    : {name:"", term:preset.term, wkFrom:"", wkTo:"", klas:{[preset.kla]:true}, fa:{}, pt:{}, taught:null};
+  if(!unitDraft.klas) unitDraft.klas = {};
+  if(!unitDraft.fa) unitDraft.fa = {};
+  if(!unitDraft.pt) unitDraft.pt = {};
+  document.getElementById("sheet").innerHTML = unitSheetHTML(!!existing);
+  document.getElementById("summary").hidden = false;
+  document.body.classList.add("report", "noscroll");
+  wireUnitSheet(!!existing);
+}
+function closeUnit(){
+  unitDraft = null; unitDraftId = null;
+  document.getElementById("summary").hidden = true;
+  document.body.classList.remove("report", "noscroll");
+}
+function unitSheetHTML(existing){
+  return `<div class="sheethead">
+    <div>
+      <h2>${existing ? "Edit unit" : "New unit"}</h2>
+      <div class="sheetmeta">${esc(activeTracker().name)}</div>
+    </div>
+    <div class="sheetacts">
+      <button class="sheetbtn primary" id="usave" type="button">Save</button>
+      <button class="sheetbtn" id="uclose" type="button">Cancel</button>
+    </div>
+  </div>
+  <div class="ufield">
+    <label class="ulabel" for="uname">Unit name</label>
+    <input class="uinput" id="uname" type="text" autocomplete="off"
+      placeholder="e.g. Sharing the Planet" value="${esc(unitDraft.name)}">
+  </div>
+  <div class="ufield">
+    <span class="ulabel">Term</span>
+    <div class="urow" id="utermf"></div>
+    <div class="urow" style="margin-top:9px">
+      <span class="ulabel" style="margin:0">Weeks</span>
+      <input class="uinput uweek" id="uwkfrom" type="number" min="1" max="${SCOPE_MAX_WEEK}"
+        value="${unitDraft.wkFrom||""}" aria-label="First week">
+      <span style="color:var(--ink-3)">to</span>
+      <input class="uinput uweek" id="uwkto" type="number" min="1" max="${SCOPE_MAX_WEEK}"
+        value="${unitDraft.wkTo||""}" aria-label="Last week">
+      <span class="utaughtnote">Optional. Maths often sits outside the unit of inquiry.</span>
+    </div>
+  </div>
+  <div class="ufield">
+    <span class="ulabel">Learning areas this unit covers</span>
+    <div class="urow" id="uklaf"></div>
+  </div>
+  <div class="ufield">
+    <span class="ulabel">Syllabus content in this unit (<span id="ucount">0</span>)</span>
+    <div class="upicked" id="uattached"></div>
+  </div>
+  <div class="ufield">
+    <label class="ulabel" for="uq">Add content</label>
+    <input class="uinput" id="uq" type="search" autocomplete="off"
+      placeholder="Search the syllabuses this unit covers, e.g. fractions, sustainability">
+    <div class="upicked" id="uresults" style="margin-top:9px"></div>
+  </div>
+  <div class="usheetacts">
+    <button class="sheetbtn primary" id="umark" type="button"></button>
+    <span class="utaughtnote" id="unote"></span>
+    ${existing ? '<button class="sheetbtn udanger grow" id="udelete" type="button">Delete unit</button>' : ''}
+  </div>`;
+}
+function wireUnitSheet(existing){
+  const termHost = document.getElementById("uklaf");
+  radioChips(document.getElementById("utermf"), TRACK_TERMS, unitDraft.term, value=>{
+    unitDraft.term = value;
+  });
+  KLAS.forEach(([k,label])=>{
+    const b = document.createElement("button");
+    b.className = "uchip"; b.type = "button"; b.dataset.value = k;
+    b.setAttribute("aria-pressed", !!unitDraft.klas[k]);
+    b.innerHTML = `<span class="dot" style="background:var(--${k})"></span>${esc(label)}`;
+    b.onclick = ()=>{
+      if(unitDraft.klas[k]) delete unitDraft.klas[k]; else unitDraft.klas[k] = true;
+      b.setAttribute("aria-pressed", !!unitDraft.klas[k]);
+      renderUnitResults();
+    };
+    termHost.appendChild(b);
+  });
+  document.getElementById("uname").addEventListener("input", e=>{ unitDraft.name = e.target.value; });
+  document.getElementById("uwkfrom").addEventListener("input", e=>{ unitDraft.wkFrom = clampWeek(e.target.value); });
+  document.getElementById("uwkto").addEventListener("input", e=>{ unitDraft.wkTo = clampWeek(e.target.value); });
+  let pickTimer;
+  document.getElementById("uq").addEventListener("input", ()=>{
+    clearTimeout(pickTimer); pickTimer = setTimeout(renderUnitResults, 160);
+  });
+  document.getElementById("usave").addEventListener("click", saveUnit);
+  document.getElementById("uclose").addEventListener("click", closeUnit);
+  document.getElementById("umark").addEventListener("click", toggleUnitTaught);
+  if(existing) document.getElementById("udelete").addEventListener("click", deleteUnit);
+  /* update the one button rather than rebuilding the list, so adding several
+     items in a row does not scroll the results out from under you */
+  document.getElementById("uattached").addEventListener("click", e=>{
+    const remove = e.target.closest("[data-drop]");
+    if(!remove) return;
+    const [kind,key] = remove.dataset.drop.split("|");
+    delete unitDraft[kind][key];
+    renderUnitAttached();
+    const button = document.querySelector("#uresults [data-attach='" + kind + "|" + key + "']");
+    if(button){ button.disabled = false; button.textContent = kind==="fa" ? "+ focus area" : "+ point"; }
+  });
+  document.getElementById("uresults").addEventListener("click", e=>{
+    const add = e.target.closest("[data-attach]");
+    if(!add || add.disabled) return;
+    const [kind,key] = add.dataset.attach.split("|");
+    unitDraft[kind][key] = true;
+    add.disabled = true; add.textContent = "added";
+    renderUnitAttached();
+  });
+  renderUnitAttached();
+  renderUnitResults();
+  document.getElementById("uname").focus();
+}
+const clampWeek = v => {
+  const n = parseInt(v,10);
+  return (!n || n < 1) ? "" : Math.min(n, SCOPE_MAX_WEEK);
+};
+
+function renderUnitAttached(){
+  const host = document.getElementById("uattached");
+  const rows = [];
+  Object.keys(unitDraft.fa).forEach(key=>{
+    const r = FA_BY_KEY.get(key);
+    rows.push({kind:"fa", key, stage:r?r.sh:"?", text:r?`${r.kla} — ${r.t}`:"(content no longer in this syllabus)"});
+  });
+  Object.keys(unitDraft.pt).forEach(key=>{
+    const hit = PT_BY_KEY.get(key);
+    rows.push({kind:"pt", key, stage:hit?hit.r.sh:"?", text:hit?hit.it.t:"(content no longer in this syllabus)"});
+  });
+  document.getElementById("ucount").textContent = rows.length;
+  document.getElementById("umark").textContent = unitDraft.taught
+    ? "Unmark as taught" : "Mark this unit taught";
+  document.getElementById("unote").textContent = unitDraft.taught
+    ? `Ticked as ${unitDraft.taught}. Unmarking removes only the ticks this unit added.`
+    : rows.length ? `Ticks all ${rows.length} as ${unitDraft.term}.`
+                  : "Attach some content first.";
+  host.innerHTML = rows.length ? rows.map(row=>
+    `<div class="upick">
+      <span class="uk">${esc(row.stage)}</span>
+      <span>${esc(row.text)}</span>
+      <button class="ux" type="button" data-drop="${row.kind}|${row.key}"
+        aria-label="Remove from unit" style="margin-left:auto">&times;</button>
+    </div>`).join("")
+    : `<p class="upickhint">Nothing attached yet. Search below to add syllabus content.</p>`;
+}
+
+function renderUnitResults(){
+  const host = document.getElementById("uresults");
+  const query = document.getElementById("uq").value.trim().toLowerCase();
+  const words = query.split(/\s+/).filter(w=>w.length>1);
+  const klas = Object.keys(unitDraft.klas);
+  if(!klas.length){
+    host.innerHTML = `<p class="upickhint">Choose at least one learning area above.</p>`;
+    return;
+  }
+  if(!words.length){
+    host.innerHTML = `<p class="upickhint">Type to search ${klas.length===1?"this learning area":"these learning areas"}. Year-group filters on the Syllabus content tab narrow this too.</p>`;
+    return;
+  }
+  /* reuse the page's existing search index and year filtering */
+  const found = DATA.filter(r=>{
+    if(!klas.includes(r.k)) return false;
+    if(state.year.size && !r._years.some(y=>state.year.has(y))) return false;
+    return words.every(w=>r._s.includes(w));
+  }).slice(0, 25);
+  if(!found.length){
+    host.innerHTML = `<p class="upickhint">Nothing matches in ${klas.map(k=>KLAS.find(([key])=>key===k)[1]).join(", ")}.</p>`;
+    return;
+  }
+  host.innerHTML = found.map(r=>{
+    const already = !!unitDraft.fa[r._fk];
+    const points = [];
+    r.g.forEach(g=>g.i.forEach(it=>{
+      if(words.every(w=>(g.t+" "+it.t+" "+it.n+" "+it.e).toLowerCase().includes(w))) points.push(it);
+    }));
+    return `<div class="upick">
+        <span class="uk">${esc(r.sh)}</span>
+        <span><b>${esc(r.t)}</b> <span style="color:var(--ink-3)">${esc(r.kla)}</span></span>
+        <button class="uadd" type="button" data-attach="fa|${r._fk}" style="margin-left:auto"
+          ${already?"disabled":""}>${already?"added":"+ focus area"}</button>
+      </div>` +
+      points.slice(0,6).map(it=>{
+        const on = !!unitDraft.pt[it._pk];
+        return `<div class="upick" style="padding-left:34px">
+          <span>${esc(it.t)}</span>
+          <button class="uadd" type="button" data-attach="pt|${it._pk}" style="margin-left:auto"
+            ${on?"disabled":""}>${on?"added":"+ point"}</button>
+        </div>`;
+      }).join("");
+  }).join("");
+}
+
+/* ---------- saving ---------- */
+function saveUnit(){
+  const tracker = activeTracker();
+  if(!unitDraft.name.trim()){ toast("Give the unit a name"); document.getElementById("uname").focus(); return; }
+  if(!Object.keys(unitDraft.klas).length){ toast("Choose at least one learning area"); return; }
+  if(!tracker.units) tracker.units = {};
+  tracker.units[unitDraftId] = JSON.parse(JSON.stringify(unitDraft));
+  trackSave();
+  pushUnit(tracker, unitDraftId, tracker.units[unitDraftId], []);
+  const name = unitDraft.name;
+  closeUnit(); renderScope();
+  toast(`Saved “${name}”`);
+}
+function deleteUnit(){
+  const tracker = activeTracker();
+  const button = document.getElementById("udelete");
+  if(button.dataset.armed !== "1"){
+    button.dataset.armed = "1";
+    button.textContent = "Really delete this unit?";
+    setTimeout(()=>{ if(button.isConnected){ button.dataset.armed=""; button.textContent="Delete unit"; } }, 5000);
+    return;
+  }
+  /* ticks stay: the teaching still happened, even if the plan is gone */
+  delete tracker.units[unitDraftId];
+  trackSave();
+  pushUnit(tracker, unitDraftId, null, []);
+  closeUnit(); renderScope();
+  toast("Unit deleted. Its ticks were kept.");
+}
+function toggleUnitTaught(){
+  const tracker = activeTracker();
+  if(!tracker.units || !tracker.units[unitDraftId]) saveUnitQuietly(tracker);
+  const unit = tracker.units[unitDraftId];
+  const pairs = [];
+  if(unit.taught){
+    /* remove only what this unit added, never a tick made by hand */
+    ["fa","pt"].forEach(kind=>{
+      Object.keys((unit.added && unit.added[kind]) || {}).forEach(key=>{
+        if(tracker[kind][key]){ delete tracker[kind][key]; pairs.push([kind,key,null]); }
+      });
+    });
+    unit.taught = null; unit.added = null;
+    toast("Unit unmarked");
+  } else {
+    const added = {fa:{}, pt:{}};
+    ["fa","pt"].forEach(kind=>{
+      Object.keys(unit[kind] || {}).forEach(key=>{
+        if(tracker[kind][key]) return;   // already ticked: leave it, and do not claim it
+        tracker[kind][key] = {t:unit.term};
+        added[kind][key] = true;
+        pairs.push([kind,key,{t:unit.term}]);
+      });
+    });
+    unit.taught = unit.term;
+    unit.added = added;
+    toast(`Ticked ${pairs.length} content item${pairs.length===1?"":"s"} as ${unit.term}`);
+  }
+  unitDraft.taught = unit.taught;
+  unitDraft.added = unit.added;
+  trackSave();
+  pushUnit(tracker, unitDraftId, unit, pairs);
+  renderUnitAttached();
+  renderScope();
+  updateProgress(matches());
+  if(!document.getElementById("syllabus-view").hidden) render();
+}
+function saveUnitQuietly(tracker){
+  if(!tracker.units) tracker.units = {};
+  tracker.units[unitDraftId] = JSON.parse(JSON.stringify(unitDraft));
+}
+
+async function pushUnit(tracker, id, unit, tickPairs){
+  if(!tracker.remote) return;
+  try{
+    const fb = await firebaseReady();
+    const args = [new fb.store.FieldPath("units", id),
+                  unit === null ? fb.store.deleteField() : unit];
+    tickPairs.forEach(([kind,key,value])=>{
+      args.push(new fb.store.FieldPath(kind, key),
+                value === null ? fb.store.deleteField() : value);
+    });
+    args.push("updated", new Date().toISOString());
+    await fb.store.updateDoc(trackerRef(fb, tracker.remote.code), ...args);
+    noteSyncOk();
+  }catch(_){
+    noteSyncFailure(unit === null ? "That deletion" : "That unit");
+  }
+}
+
+/* ---------- wiring ---------- */
+document.getElementById("scopeout").addEventListener("click", e=>{
+  const open = e.target.closest("[data-unit]");
+  if(open){ openUnit(open.dataset.unit); return; }
+  const add = e.target.closest("[data-add]");
+  if(add){
+    const [kla,term] = add.dataset.add.split("|");
+    openUnit(null, {kla, term});
+  }
+});
+document.getElementById("scopeprint").addEventListener("click", ()=>{
+  document.body.classList.add("scopeprint");
+  window.print();
+  setTimeout(()=>document.body.classList.remove("scopeprint"), 500);
 });
 
 render();

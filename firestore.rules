@@ -24,13 +24,21 @@ service cloud.firestore {
                     && validShape()
                     // Normal unticking is fine; a mass wipe is not.
                     && request.resource.data.fa.size() >= resource.data.fa.size() - 50
-                    && request.resource.data.pt.size() >= resource.data.pt.size() - 200;
+                    && request.resource.data.pt.size() >= resource.data.pt.size() - 200
+                    && unitsKept();
 
       // Trackers are left locally, never deleted from the client.
       allow delete: if false;
 
+      // Deleting a unit or two is ordinary editing; dropping them all is not.
+      function unitsKept() {
+        return !('units' in resource.data)
+               || ('units' in request.resource.data
+                   && request.resource.data.units.size() >= resource.data.units.size() - 5);
+      }
+
       function validShape() {
-        return request.resource.data.keys().hasOnly(['name','created','updated','fa','pt'])
+        return request.resource.data.keys().hasOnly(['name','created','updated','fa','pt','units'])
                && request.resource.data.name is string
                && request.resource.data.fa is map
                && request.resource.data.pt is map;
