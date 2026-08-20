@@ -35,7 +35,7 @@ header{background:var(--chrome-bg);color:var(--ink);padding:16px 22px 0}
 .mast{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 16px}
 h1{margin:0;font-size:21px;font-weight:700;letter-spacing:-.015em;color:var(--brand)}
 .sub{color:var(--chrome-dim);font-size:13px}
-.stats{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--chrome-dim);letter-spacing:.02em}
+.stats{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.02em;margin:0 0 10px}
 
 /* ---------- controls ---------- */
 .controls{background:var(--chrome-bg);padding:14px 22px 16px}
@@ -63,9 +63,21 @@ h1{margin:0;font-size:21px;font-weight:700;letter-spacing:-.015em;color:var(--br
 
 .filters{display:flex;flex-wrap:wrap;gap:14px 26px;margin-top:13px;align-items:flex-start}
 .fgroup{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.flabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
-  color:var(--chrome-label);margin-right:2px}
+.flabel{font-size:12px;font-weight:600;color:var(--chrome-label);margin-right:2px}
 .filterhelp{margin:9px 0 0;color:var(--chrome-help);font-size:11.5px}
+.popwrap{position:relative;display:inline-flex}
+.pop{position:absolute;top:calc(100% + 7px);left:0;z-index:40;min-width:246px;
+  display:flex;flex-direction:column;gap:9px;padding:13px 15px;border-radius:11px;
+  background:#fff;border:1px solid var(--line);box-shadow:0 10px 28px rgba(43,41,37,.14)}
+.pop[hidden]{display:none}
+.pop-right{left:auto;right:0}
+.pop{max-width:min(300px,calc(100vw - 28px))}
+.popttl{font-size:11.5px;font-weight:650;color:var(--ink-2)}
+.pophelp{margin:0;font-size:11.5px;color:var(--ink-3);line-height:1.45}
+.popitem{width:100%;text-align:left;padding:9px 11px;font-size:13.5px}
+.ddbtn::after{content:"\25BE";margin-left:7px;font-size:10px;opacity:.55}
+.ddbtn[aria-expanded="true"]{background:var(--chrome-btn-hover);border-color:var(--chrome-line-hover)}
+.ddbtn.on{border-color:var(--brand);color:var(--brand);font-weight:600}
 .chip{font:inherit;font-size:12.5px;padding:5px 11px;border-radius:999px;cursor:pointer;
   border:1px solid var(--chrome-line);background:transparent;color:var(--chrome-text-2);line-height:1.35}
 .chip:hover{border-color:var(--chrome-line-hover);color:var(--ink)}
@@ -241,6 +253,7 @@ body.tracking .trackbar{display:block}
 .tsel:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
 .tprog{margin-left:auto;display:flex;align-items:center;gap:10px;
   font-family:var(--mono);font-size:11.5px;color:var(--chrome-dim)}
+.tprogstack+.btn{margin-left:0}
 .tprog b{color:var(--ink)}
 .tbar{width:110px;height:6px;border-radius:99px;background:#EDE6DA;overflow:hidden}
 .tbar i{display:block;height:100%;width:0;background:#4E9E6A;border-radius:99px;transition:width .25s}
@@ -441,7 +454,6 @@ body.noscroll{overflow:hidden}
     <div class="mast">
       <h1>NSW K-6 Syllabus Finder</h1>
       <span class="sub">All six primary key learning areas, Kindergarten to Year 6, plus staff assessment guidance and K&ndash;6 work samples</span>
-      <span class="stats">181 outcomes &middot; 2,423 content points &middot; 142 work samples &middot; snapshot 20 August 2026</span>
     </div>
   </div>
 </header>
@@ -461,28 +473,60 @@ body.noscroll{overflow:hidden}
     <div id="content-controls">
       <div class="searchrow">
         <input id="q" type="search" autocomplete="off" spellcheck="false"
-          placeholder="Search outcomes and content points, e.g. fractions, Songlines, online safety, algorithm">
+          placeholder="Search outcomes and content points, e.g. fractions, Songlines, online safety">
         <button class="btn" id="track" type="button" aria-pressed="false">Tracking</button>
-        <button class="btn" id="topjoin" type="button">Join</button>
-        <button class="btn" id="expand">Expand all</button>
-        <button class="btn" id="reset">Reset</button>
+        <span class="popwrap">
+          <button class="btn ddbtn" id="yearbtn" type="button" aria-haspopup="true"
+            aria-expanded="false">All year groups</button>
+          <span class="pop" id="yearpop" hidden>
+            <span class="popttl">Year group</span>
+            <div class="fgroup" id="yearf"></div>
+            <p class="pophelp">Year groups focus the matching NESA stage.</p>
+          </span>
+        </span>
+        <span class="popwrap">
+          <button class="btn ddbtn" id="klabtn" type="button" aria-haspopup="true"
+            aria-expanded="false">All learning areas</button>
+          <span class="pop" id="klapop" hidden>
+            <span class="popttl">Learning areas</span>
+            <div class="fgroup" id="klaf"></div>
+            <span class="popttl">Mathematics part</span>
+            <div class="fgroup" id="partf"></div>
+            <p class="pophelp">Parts A and B are learning sequences, not year levels, so either can be
+              selected for any year in its stage.</p>
+          </span>
+        </span>
+        <span class="popwrap">
+          <button class="btn" id="more" type="button" aria-haspopup="true" aria-expanded="false"
+            aria-label="More actions">&#8943;</button>
+          <span class="pop pop-right" id="morepop" hidden>
+            <button class="btn popitem" id="expand">Expand all focus areas</button>
+            <button class="btn popitem" id="reset">Reset search and filters</button>
+            <button class="btn popitem" id="topjoin" type="button">Join a tracker with a code</button>
+          </span>
+        </span>
       </div>
-      <div class="filters">
-        <div class="fgroup" id="klaf"><span class="flabel">Learning area</span></div>
-        <div class="fgroup" id="yearf"><span class="flabel">Year group</span></div>
-        <div class="fgroup" id="partf"><span class="flabel">Maths part</span></div>
-      </div>
-      <p class="filterhelp">Year groups focus the matching NESA stage. Maths Parts A and B can be selected independently.</p>
     </div>
       <div class="trackbar" id="trackbar">
         <div class="trackrow">
-          <span class="flabel">Tracker</span>
           <select class="tsel" id="trksel" aria-label="Active teaching tracker"></select>
-          <button class="btn" id="trknew" type="button">New</button>
-          <button class="btn" id="trkren" type="button">Rename</button>
-          <button class="btn" id="trkdel" type="button">Delete</button>
-          <button class="btn" id="trkshare" type="button">Share</button>
-          <button class="btn" id="trkjoin" type="button">Join</button>
+          <span class="popwrap">
+            <button class="btn ddbtn" id="trktermbtn" type="button" aria-haspopup="true"
+              aria-expanded="false">Ticking as Term 1</button>
+            <span class="pop" id="trktermpop" hidden>
+              <span class="popttl">Record new ticks as</span>
+              <div class="fgroup" id="trktermf"></div>
+              <p class="pophelp">Changing this does not alter ticks already made.</p>
+            </span>
+          </span>
+          <span class="popwrap">
+            <button class="btn ddbtn" id="trkviewbtn" type="button" aria-haspopup="true"
+              aria-expanded="false">Showing all</button>
+            <span class="pop" id="trkviewpop" hidden>
+              <span class="popttl">Show</span>
+              <div class="fgroup" id="trkviewf"></div>
+            </span>
+          </span>
           <span class="tprog tprogstack">
             <span class="tprogline">
               <span id="trkprog">0 of 0 focus areas taught</span>
@@ -490,18 +534,21 @@ body.noscroll{overflow:hidden}
             </span>
             <span class="tprogsub" id="trkprog2"></span>
           </span>
-        </div>
-        <div class="trackrow">
-          <span class="flabel">Ticking as</span>
-          <div class="fgroup" id="trktermf"></div>
-          <span class="flabel">Show</span>
-          <div class="fgroup" id="trkviewf"></div>
-          <span class="tprog">
-            <button class="btn" id="trksum" type="button">Summary</button>
-            <button class="btn" id="trkexp" type="button">Export</button>
-            <button class="btn" id="trkimp" type="button">Import</button>
-            <span class="saved" id="trksaved">Saved on this device</span>
+          <button class="btn" id="trksum" type="button">Summary</button>
+          <button class="btn" id="trkshare" type="button">Share</button>
+          <span class="popwrap">
+            <button class="btn" id="trkmore" type="button" aria-haspopup="true"
+              aria-expanded="false" aria-label="Tracker actions">&#8943;</button>
+            <span class="pop pop-right" id="trkmorepop" hidden>
+              <button class="btn popitem" id="trknew" type="button">New tracker</button>
+              <button class="btn popitem" id="trkren" type="button">Rename this tracker</button>
+              <button class="btn popitem" id="trkdel" type="button">Delete</button>
+              <button class="btn popitem" id="trkjoin" type="button">Join with a code</button>
+              <button class="btn popitem" id="trkexp" type="button">Export a backup</button>
+              <button class="btn popitem" id="trkimp" type="button">Import a backup</button>
+            </span>
           </span>
+          <span class="saved" id="trksaved">Saved on this device</span>
         </div>
         <div class="trackrow" id="trknamerow" hidden>
           <span class="flabel" id="trknamelabel">New tracker</span>
@@ -703,6 +750,7 @@ body.noscroll{overflow:hidden}
 </main>
 
 <footer>
+  <p class="stats">181 outcomes &middot; 2,423 content points &middot; 142 work samples &middot; snapshot 20 August 2026</p>
   <p><strong>About this page.</strong> An unofficial working copy of the NSW syllabuses,
   compiled from the NSW Curriculum website on 20 August 2026. English and Mathematics are the 2022
   syllabuses currently being taught. Science and Technology, HSIE, Creative Arts and PDHPE are
@@ -941,6 +989,7 @@ function render(){
   const base = matches();
   const m = trackFilter(base);
   updateProgress(base);
+  updateFilterLabels();
   const searching = terms().length>0;
   const ncp = m.reduce((a,r)=>a+(searching?cps(r).list.length:r.g.reduce((b,g)=>b+g.i.length,0)),0);
   document.getElementById("meter").innerHTML =
@@ -1611,6 +1660,7 @@ trackLoad();
 renderTrackerSelect();
 radioChips(document.getElementById("trktermf"), TRACK_TERMS, track.term, value=>{
   track.term = value;
+  updateTrackerLabels();
 });
 radioChips(document.getElementById("trkviewf"), TRACK_VIEWS, track.view, value=>{
   track.view = value; render();
@@ -2353,6 +2403,59 @@ document.getElementById("scopeprint").addEventListener("click", ()=>{
 scopeReady = true;
 if(!document.getElementById("scope-view").hidden) renderScope();
 
+/* ---------- popovers ---------- */
+function closeAllPops(except){
+  document.querySelectorAll(".pop").forEach(pop=>{
+    if(pop===except || pop.hidden) return;
+    pop.hidden = true;
+    const trigger = pop.parentElement.querySelector("[aria-haspopup]");
+    if(trigger) trigger.setAttribute("aria-expanded","false");
+  });
+}
+document.addEventListener("click", e=>{
+  const trigger = e.target.closest("[aria-haspopup]");
+  if(trigger && trigger.parentElement.classList.contains("popwrap")){
+    const pop = trigger.parentElement.querySelector(".pop");
+    const opening = pop.hidden;
+    closeAllPops(opening ? pop : null);
+    pop.hidden = !opening;
+    trigger.setAttribute("aria-expanded", String(opening));
+    return;
+  }
+  /* a menu item has just run its own handler on the way up; close behind it */
+  if(e.target.closest(".popitem")){ closeAllPops(); return; }
+  /* chips inside a popover stay put, so several can be chosen in one go */
+  if(!e.target.closest(".pop")) closeAllPops();
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeAllPops(); });
+
+/* the dropdown buttons say what is currently chosen, so nothing is hidden by being tidy */
+function updateTrackerLabels(){
+  const termBtn = document.getElementById("trktermbtn");
+  const viewBtn = document.getElementById("trkviewbtn");
+  if(!termBtn || !viewBtn) return;
+  const term = (TRACK_TERMS.find(([v])=>v===track.term) || [,"Term 1"])[1];
+  termBtn.textContent = "Ticking as " + term;
+  const view = (TRACK_VIEWS.find(([v])=>v===track.view) || [,"All"])[1];
+  viewBtn.textContent = track.view === "all" ? "Showing all" : "Showing " + view.toLowerCase();
+  viewBtn.classList.toggle("on", track.view !== "all");
+}
+function updateFilterLabels(){
+  updateTrackerLabels();
+  const yearBtn = document.getElementById("yearbtn");
+  const klaBtn = document.getElementById("klabtn");
+  if(!yearBtn || !klaBtn) return;
+  const years = [...state.year];
+  yearBtn.textContent = years.length === 0 ? "All year groups"
+    : years.length === 1 ? years[0] : years.length + " year groups";
+  yearBtn.classList.toggle("on", years.length > 0);
+  const klas = [...state.kla].map(k=>(KLAS.find(([key])=>key===k) || [,k])[1]);
+  const parts = [...state.part];
+  const klaLabel = klas.length === 0 ? "All learning areas"
+    : klas.length === 1 ? klas[0] : klas.length + " learning areas";
+  klaBtn.textContent = parts.length ? klaLabel + " · Part " + parts.sort().join("/") : klaLabel;
+  klaBtn.classList.toggle("on", klas.length > 0 || parts.length > 0);
+}
 render();
 renderWork();
 </script>
