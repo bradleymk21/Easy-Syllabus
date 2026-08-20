@@ -370,6 +370,16 @@ body.noscroll{overflow:hidden}
 .uchild::before{content:"";position:absolute;left:14px;top:0;bottom:0;
   border-left:2px solid var(--line)}
 .uonlypoints{font-family:var(--mono);font-size:10px;color:var(--ink-3)}
+.uattached-points{margin:0 0 2px 26px}
+.uattached-points>summary{cursor:pointer;list-style:none;padding:4px 0;
+  font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.uattached-points>summary::-webkit-details-marker{display:none}
+.uattached-points>summary::before{content:"\25B6";display:inline-block;margin-right:6px;
+  font-size:9px;transition:transform .15s}
+.uattached-points[open]>summary::before{transform:rotate(90deg)}
+.uattached-points>summary:hover{color:var(--ink)}
+.uattached-points .uchild{padding-left:4px}
+.uattached-points .uchild::before{display:none}
 .ugroup{display:flex;gap:9px;align-items:center;margin:7px 0 2px;padding:5px 9px;
   border-radius:6px;background:#EFF3F9;font-size:12.5px;font-weight:650;color:var(--ink)}
 .usheetacts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
@@ -1920,11 +1930,13 @@ function renderScope(){
 
 /* ---------- unit editor ---------- */
 let unitDraft = null, unitDraftId = null;
+const attachedOpen = new Set();
 
 function openUnit(id, preset){
   const tracker = activeTracker();
   if(!tracker){ toast("Create a tracker first"); return; }
   const existing = id ? unitsOf(tracker)[id] : null;
+  attachedOpen.clear();
   unitDraftId = id || fnv1a("u|" + Date.now() + "|" + Math.random());
   unitDraft = existing
     ? JSON.parse(JSON.stringify(existing))
@@ -2021,6 +2033,11 @@ function wireUnitSheet(existing){
   if(existing) document.getElementById("udelete").addEventListener("click", deleteUnit);
   /* update the one button rather than rebuilding the list, so adding several
      items in a row does not scroll the results out from under you */
+  document.getElementById("uattached").addEventListener("toggle", e=>{
+    const details = e.target;
+    if(!details.matches || !details.matches(".uattached-points[data-fk]")) return;
+    details.open ? attachedOpen.add(details.dataset.fk) : attachedOpen.delete(details.dataset.fk);
+  }, true);
   document.getElementById("uattached").addEventListener("click", e=>{
     const remove = e.target.closest("[data-drop]");
     if(!remove) return;
@@ -2115,12 +2132,17 @@ function renderUnitAttached(){
                aria-label="Remove this focus area" style="margin-left:auto">&times;</button>`
           : `<span class="uonlypoints" style="margin-left:auto">points only</span>`) +
       `</div>` +
-      entry.points.map(p=>
-        `<div class="upick uchild">
-          <span>${esc(p.it.t)}</span>
-          <button class="ux" type="button" data-drop="pt|${p.key}"
-            aria-label="Remove this content point" style="margin-left:auto">&times;</button>
-        </div>`).join("");
+      (entry.points.length
+        ? `<details class="uattached-points" data-fk="${entry.r._fk}"` +
+          `${attachedOpen.has(entry.r._fk) ? " open" : ""}>` +
+          `<summary>${entry.points.length} content point${entry.points.length===1?"":"s"}</summary>` +
+          entry.points.map(p=>
+            `<div class="upick uchild">
+              <span>${esc(p.it.t)}</span>
+              <button class="ux" type="button" data-drop="pt|${p.key}"
+                aria-label="Remove this content point" style="margin-left:auto">&times;</button>
+            </div>`).join("") + `</details>`
+        : "");
   }).join("") +
   orphans.map(o=>
     `<div class="upick">
