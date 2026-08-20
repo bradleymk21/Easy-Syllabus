@@ -1974,6 +1974,7 @@ function stableJSON(value){
   return "{" + Object.keys(value).sort()
     .map(k=>JSON.stringify(k) + ":" + stableJSON(value[k])).join(",") + "}";
 }
+const termLabel = t => (TRACK_TERMS.find(([value])=>value===t) || [,"Term 1"])[1];
 const unitWeeks = u => !u.wkFrom ? ""
   : (u.wkTo && u.wkTo !== u.wkFrom) ? `Wk ${u.wkFrom}–${u.wkTo}` : `Wk ${u.wkFrom}`;
 const unitCount = u => Object.keys(u.fa||{}).length + Object.keys(u.pt||{}).length;
@@ -2117,7 +2118,7 @@ function unitSheetHTML(existing){
   return `<div class="sheethead">
     <div>
       <h2>${existing ? "Edit unit" : "New unit"}</h2>
-      <div class="sheetmeta">${esc(activeTracker().name)}</div>
+      <div class="sheetmeta">${esc(termLabel(unitDraft.term))} &middot; ${esc(activeTracker().name)}</div>
     </div>
     <div class="sheetacts">
       <button class="sheetbtn primary" id="usave" type="button">Save</button>
@@ -2130,9 +2131,7 @@ function unitSheetHTML(existing){
       placeholder="e.g. Sharing the Planet" value="${esc(unitDraft.name)}">
   </div>
   <div class="ufield">
-    <span class="ulabel">Term</span>
-    <div class="urow" id="utermf"></div>
-    <div class="urow" style="margin-top:9px">
+    <div class="urow">
       <span class="ulabel" style="margin:0">Weeks</span>
       <input class="uinput uweek" id="uwkfrom" type="number" min="1" max="${SCOPE_MAX_WEEK}"
         value="${unitDraft.wkFrom||""}" aria-label="First week">
@@ -2141,7 +2140,12 @@ function unitSheetHTML(existing){
         value="${unitDraft.wkTo||""}" aria-label="Last week">
       <span class="utaughtnote">Optional. Maths often sits outside the unit of inquiry.</span>
     </div>
-  </div>
+  </div>` +
+  /* moving a unit to another term is a real need, but only once it exists */
+  (existing ? `<div class="ufield">
+    <span class="ulabel">Move to another term</span>
+    <div class="urow" id="utermf"></div>
+  </div>` : "") + `
   <div class="ufield">
     <span class="ulabel">Syllabuses this unit covers</span>
     <div class="urow" id="uklaf"></div>
@@ -2164,8 +2168,11 @@ function unitSheetHTML(existing){
 }
 function wireUnitSheet(existing){
   const termHost = document.getElementById("uklaf");
-  radioChips(document.getElementById("utermf"), TRACK_TERMS, unitDraft.term, value=>{
+  const termChipHost = document.getElementById("utermf");
+  if(termChipHost) radioChips(termChipHost, TRACK_TERMS, unitDraft.term, value=>{
     unitDraft.term = value;
+    const meta = document.querySelector("#sheet .sheetmeta");
+    if(meta) meta.innerHTML = esc(termLabel(value)) + " &middot; " + esc(activeTracker().name);
   });
   KLAS.forEach(([k,label])=>{
     const b = document.createElement("button");
