@@ -202,6 +202,8 @@ footer strong{color:var(--ink-2)}
 @media (max-width:640px){
   header,.controls,main,footer{padding-left:14px;padding-right:14px}
   .stats{width:100%;margin-left:0}
+  .searchrow{flex-wrap:wrap}
+  #q{flex:1 0 100%}
   .fa-t{font-size:15px}
   .cbtn{opacity:1}
   .assessment-hero,.assessment-card{padding:17px}
@@ -345,6 +347,7 @@ body.noscroll{overflow:hidden}
         <input id="q" type="search" autocomplete="off" spellcheck="false"
           placeholder="Search outcomes and content points, e.g. fractions, Songlines, online safety, algorithm">
         <button class="btn" id="track" type="button" aria-pressed="false">Tracking</button>
+        <button class="btn" id="topjoin" type="button">Join</button>
         <button class="btn" id="expand">Expand all</button>
         <button class="btn" id="reset">Reset</button>
       </div>
@@ -395,6 +398,7 @@ body.noscroll{overflow:hidden}
           <input class="tsel sharecode" id="trksharecode" type="text" autocomplete="off"
             spellcheck="false" style="max-width:260px" aria-label="Share code">
           <button class="btn" id="trkshareok" type="button">Join</button>
+          <button class="btn" id="trksharelink" type="button">Copy link</button>
           <button class="btn" id="trksharecopy" type="button">Copy code</button>
           <button class="btn" id="trksharecancel" type="button">Close</button>
           <span class="saved" id="trksharemsg"></span>
@@ -1360,16 +1364,17 @@ function commitNameRow(){
   else makeTracker(name);
   closeNameRow(); trackSave(); renderTrackerSelect(); render();
 }
-document.getElementById("track").addEventListener("click", ()=>{
-  track.on = !track.on;
-  document.body.classList.toggle("tracking", track.on);
+function setTracking(on, offerNewTracker){
+  track.on = on;
+  document.body.classList.toggle("tracking", on);
   const button = document.getElementById("track");
-  button.setAttribute("aria-pressed", track.on);
-  button.textContent = track.on ? "Tracking on" : "Tracking";
-  if(track.on && !track.store.trackers.length) openNameRow("new");
-  if(track.on) attachListener(activeTracker());
+  button.setAttribute("aria-pressed", on);
+  button.textContent = on ? "Tracking on" : "Tracking";
+  if(on && offerNewTracker && !track.store.trackers.length) openNameRow("new");
+  if(on) attachListener(activeTracker());
   render();
-});
+}
+document.getElementById("track").addEventListener("click", ()=>setTracking(!track.on, true));
 document.getElementById("trksel").addEventListener("change", e=>{
   track.store.active = e.target.value || null;
   updateTrackerButtons();
@@ -1616,9 +1621,10 @@ function openShareRow(mode, code){
   input.placeholder = mode==="share" ? "" : "paste the code your team shared";
   document.getElementById("trkshareok").hidden = mode === "share";
   document.getElementById("trksharecopy").hidden = mode !== "share";
+  document.getElementById("trksharelink").hidden = mode !== "share";
   document.getElementById("trksharemsg").textContent = mode==="share"
-    ? "Anyone with this code can view and tick this tracker."
-    : "";
+    ? "Send the link. Anyone who opens it joins this tracker and can tick it."
+    : "Paste the code a colleague sent you.";
   document.getElementById("trksharerow").hidden = false;
   input.focus();
   if(mode==="share") input.select();
@@ -1626,6 +1632,19 @@ function openShareRow(mode, code){
 function closeShareRow(){
   document.getElementById("trksharerow").hidden = true;
 }
+const shareLink = code => location.origin + location.pathname + "#join=" + code;
+
+/* Someone opening a shared link should land straight in the tracker, without
+   having to discover the Tracking button first. */
+function joinFromLink(){
+  const match = location.hash.match(/[#&]join=([a-z0-9-]+)/i);
+  if(!match) return;
+  /* drop the code from the address bar so a refresh does not re-join */
+  history.replaceState(null, "", location.pathname + location.search);
+  setTracking(true, false);
+  joinTracker(match[1].toLowerCase());
+}
+joinFromLink();
 
 document.getElementById("trkshare").addEventListener("click", shareTracker);
 document.getElementById("trkjoin").addEventListener("click", ()=>openShareRow("join",""));
@@ -1633,6 +1652,13 @@ document.getElementById("trkshareok").addEventListener("click", ()=>
   joinTracker(document.getElementById("trksharecode").value));
 document.getElementById("trksharecopy").addEventListener("click", ()=>
   copy(document.getElementById("trksharecode").value, "Share code copied"));
+document.getElementById("trksharelink").addEventListener("click", ()=>
+  copy(shareLink(document.getElementById("trksharecode").value), "Share link copied"));
+document.getElementById("topjoin").addEventListener("click", ()=>{
+  if(!track.on) setTracking(true, false);
+  closeNameRow();
+  openShareRow("join", "");
+});
 document.getElementById("trksharecancel").addEventListener("click", closeShareRow);
 document.getElementById("trksharecode").addEventListener("keydown", e=>{
   if(e.key==="Enter" && !e.target.readOnly){ e.preventDefault(); joinTracker(e.target.value); }
