@@ -1700,7 +1700,9 @@ async function shareTracker(){
     const code = makeShareCode();
     await fb.store.setDoc(trackerRef(fb, code), {
       name: tracker.name, created: tracker.created,
-      updated: new Date().toISOString(), fa: tracker.fa, pt: tracker.pt
+      updated: new Date().toISOString(), fa: tracker.fa, pt: tracker.pt,
+      /* a year may already be planned before anyone thinks to share it */
+      units: tracker.units || {}
     });
     tracker.remote = {code};
     trackSave(); renderTrackerSelect(); attachListener(tracker);
@@ -1732,7 +1734,8 @@ async function joinTracker(raw){
     const now = new Date().toISOString();
     const tracker = {id:fnv1a(code), name:data.name || "Shared tracker",
                      created:data.created || now, updated:data.updated || now,
-                     fa:data.fa || {}, pt:data.pt || {}, remote:{code}};
+                     fa:data.fa || {}, pt:data.pt || {}, units:data.units || {},
+                     remote:{code}};
     track.store.trackers.push(tracker);
     track.store.active = tracker.id;
     trackSave(); renderTrackerSelect(); render(); attachListener(tracker);
