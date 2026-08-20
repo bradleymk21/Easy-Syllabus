@@ -364,6 +364,12 @@ body.noscroll{overflow:hidden}
   transition:transform .15s}
 .upoints[open]>summary::before{transform:rotate(90deg)}
 .upoints>summary:hover{color:var(--ink)}
+.uparent{font-size:13px}
+.uparent+.uchild{border-top:0}
+.uchild{padding-left:30px;position:relative;color:var(--ink-2);font-size:13px}
+.uchild::before{content:"";position:absolute;left:14px;top:0;bottom:0;
+  border-left:2px solid var(--line)}
+.uonlypoints{font-family:var(--mono);font-size:10px;color:var(--ink-3)}
 .ugroup{display:flex;gap:9px;align-items:center;margin:7px 0 2px;padding:5px 9px;
   border-radius:6px;background:#EFF3F9;font-size:12.5px;font-weight:650;color:var(--ink)}
 .usheetacts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
@@ -2054,30 +2060,75 @@ const clampWeek = v => {
 
 function renderUnitAttached(){
   const host = document.getElementById("uattached");
-  const rows = [];
+  const total = Object.keys(unitDraft.fa).length + Object.keys(unitDraft.pt).length;
+
+  /* Nest points under the focus area they belong to. A flat list mixes outcomes
+     and content points into an unreadable run once a unit has more than a few. */
+  const groups = new Map();
+  const orphans = [];
+  const group = r => {
+    if(!groups.has(r._fk)) groups.set(r._fk, {r, attached:false, points:[]});
+    return groups.get(r._fk);
+  };
   Object.keys(unitDraft.fa).forEach(key=>{
     const r = FA_BY_KEY.get(key);
-    rows.push({kind:"fa", key, stage:r?r.sh:"?", text:r?`${r.kla} — ${r.t}`:"(content no longer in this syllabus)"});
+    if(!r){ orphans.push({kind:"fa", key}); return; }
+    group(r).attached = true;
   });
   Object.keys(unitDraft.pt).forEach(key=>{
     const hit = PT_BY_KEY.get(key);
-    rows.push({kind:"pt", key, stage:hit?hit.r.sh:"?", text:hit?hit.it.t:"(content no longer in this syllabus)"});
+    if(!hit){ orphans.push({kind:"pt", key}); return; }
+    group(hit.r).points.push({key, it:hit.it, g:hit.g});
   });
-  document.getElementById("ucount").textContent = rows.length;
+
+  const ordered = [...groups.values()].sort((a,b)=>
+    (KLA_ORDER.get(a.r.k) ?? 99) - (KLA_ORDER.get(b.r.k) ?? 99) ||
+    (STAGE_ORDER.get(a.r.st) ?? 99) - (STAGE_ORDER.get(b.r.st) ?? 99) || a.r._i - b.r._i);
+  ordered.forEach(entry=>{
+    /* keep points in syllabus order, not the order they happened to be clicked */
+    const order = [];
+    entry.r.g.forEach(g=>g.i.forEach(it=>order.push(it._pk)));
+    entry.points.sort((a,b)=>order.indexOf(a.key) - order.indexOf(b.key));
+  });
+
+  document.getElementById("ucount").textContent = total;
   document.getElementById("umark").textContent = unitDraft.taught
     ? "Unmark as taught" : "Mark this unit taught";
   document.getElementById("unote").textContent = unitDraft.taught
     ? `Ticked as ${unitDraft.taught}. Unmarking removes only the ticks this unit added.`
-    : rows.length ? `Ticks all ${rows.length} as ${unitDraft.term}.`
-                  : "Attach some content first.";
-  host.innerHTML = rows.length ? rows.map(row=>
+    : total ? `Ticks all ${total} as ${unitDraft.term}.`
+            : "Attach some content first.";
+
+  if(!total){
+    host.innerHTML = `<p class="upickhint">Nothing attached yet. Pick content from the list below.</p>`;
+    return;
+  }
+  host.innerHTML = ordered.map(entry=>{
+    const codes = entry.r.o.filter(o=>o.c).map(o=>o.c).join(" ");
+    return `<div class="upick uparent">
+        <span class="uk">${esc(entry.r.sh)}</span>
+        <span><b>${esc(entry.r.t)}</b> <span style="color:var(--ink-3)">${esc(entry.r.kla)}</span>` +
+        (codes ? ` <span class="ucodes">${esc(codes)}</span>` : "") +
+        `</span>` +
+        (entry.attached
+          ? `<button class="ux" type="button" data-drop="fa|${entry.r._fk}"
+               aria-label="Remove this focus area" style="margin-left:auto">&times;</button>`
+          : `<span class="uonlypoints" style="margin-left:auto">points only</span>`) +
+      `</div>` +
+      entry.points.map(p=>
+        `<div class="upick uchild">
+          <span>${esc(p.it.t)}</span>
+          <button class="ux" type="button" data-drop="pt|${p.key}"
+            aria-label="Remove this content point" style="margin-left:auto">&times;</button>
+        </div>`).join("");
+  }).join("") +
+  orphans.map(o=>
     `<div class="upick">
-      <span class="uk">${esc(row.stage)}</span>
-      <span>${esc(row.text)}</span>
-      <button class="ux" type="button" data-drop="${row.kind}|${row.key}"
-        aria-label="Remove from unit" style="margin-left:auto">&times;</button>
-    </div>`).join("")
-    : `<p class="upickhint">Nothing attached yet. Search below to add syllabus content.</p>`;
+      <span class="uk">?</span>
+      <span style="color:var(--ink-3)">Content no longer in this syllabus &mdash; kept, not deleted</span>
+      <button class="ux" type="button" data-drop="${o.kind}|${o.key}"
+        aria-label="Remove" style="margin-left:auto">&times;</button>
+    </div>`).join("");
 }
 
 function renderUnitResults(){
