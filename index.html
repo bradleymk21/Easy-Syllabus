@@ -233,6 +233,7 @@ body.tracking .trackbar{display:block}
 .tprogsub b{color:#9FB0CC;font-weight:600}
 .saved{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#6F8A74}
 .saved.warn{color:#C98A3E}
+.sharecode{font-family:var(--mono);font-size:12.5px;letter-spacing:.06em}
 
 /* tick controls on cards */
 .fa-headrow{display:flex;align-items:flex-start}
@@ -360,6 +361,8 @@ body.noscroll{overflow:hidden}
           <button class="btn" id="trknew" type="button">New</button>
           <button class="btn" id="trkren" type="button">Rename</button>
           <button class="btn" id="trkdel" type="button">Delete</button>
+          <button class="btn" id="trkshare" type="button">Share</button>
+          <button class="btn" id="trkjoin" type="button">Join</button>
           <span class="tprog tprogstack">
             <span class="tprogline">
               <span id="trkprog">0 of 0 focus areas taught</span>
@@ -386,6 +389,15 @@ body.noscroll{overflow:hidden}
             placeholder="e.g. Year 4 — 2026, or 4B Mathematics — 2026" aria-label="Tracker name">
           <button class="btn" id="trknameok" type="button">Save</button>
           <button class="btn" id="trknamecancel" type="button">Cancel</button>
+        </div>
+        <div class="trackrow" id="trksharerow" hidden>
+          <span class="flabel" id="trksharelabel">Share code</span>
+          <input class="tsel sharecode" id="trksharecode" type="text" autocomplete="off"
+            spellcheck="false" style="max-width:260px" aria-label="Share code">
+          <button class="btn" id="trkshareok" type="button">Join</button>
+          <button class="btn" id="trksharecopy" type="button">Copy code</button>
+          <button class="btn" id="trksharecancel" type="button">Close</button>
+          <span class="saved" id="trksharemsg"></span>
         </div>
       </div>
     </div>
@@ -1090,8 +1102,10 @@ function toggleTick(key, isPoint){
   const tracker = activeTracker();
   if(!tracker){ toast("Create a tracker first"); return; }
   const map = isPoint ? tracker.pt : tracker.fa;
-  if(map[key]) delete map[key]; else map[key] = {t:track.term};
+  const value = map[key] ? null : {t:track.term};
+  if(value) map[key] = value; else delete map[key];
   trackSave();
+  if(tracker.remote) pushTick(tracker, key, isPoint, value);
   /* a full render would drop scroll position and keyboard focus, so repaint just
      this control unless the taught/not-taught filter means the card must leave */
   if(!isPoint && track.view!=="all"){ render(); return; }
@@ -1117,6 +1131,7 @@ function cycleTerm(key){
   const order = TRACK_TERMS.map(([value])=>value);
   tracker.fa[key].t = order[(order.indexOf(tracker.fa[key].t)+1) % order.length];
   trackSave(); paintTick(key);
+  if(tracker.remote) pushTick(tracker, key, false, tracker.fa[key]);
 }
 function trackFilter(list){
   if(!track.on || track.view==="all" || !activeTracker()) return list;
@@ -1161,14 +1176,21 @@ function renderTrackerSelect(){
     const option = document.createElement("option");
     option.value = ""; option.textContent = "No tracker yet — choose New";
     select.appendChild(option);
-    return;
+  } else {
+    track.store.trackers.forEach(tracker=>{
+      const option = document.createElement("option");
+      option.value = tracker.id;
+      option.textContent = tracker.remote ? tracker.name + " (shared)" : tracker.name;
+      if(tracker.id===track.store.active) option.selected = true;
+      select.appendChild(option);
+    });
   }
-  track.store.trackers.forEach(tracker=>{
-    const option = document.createElement("option");
-    option.value = tracker.id; option.textContent = tracker.name;
-    if(tracker.id===track.store.active) option.selected = true;
-    select.appendChild(option);
-  });
+  updateTrackerButtons();
+}
+function updateTrackerButtons(){
+  const shared = !!(activeTracker() && activeTracker().remote);
+  document.getElementById("trkshare").textContent = shared ? "Show code" : "Share";
+  if(!deleteArmed) document.getElementById("trkdel").textContent = shared ? "Leave" : "Delete";
 }
 function radioChips(host, items, current, onpick){
   items.forEach(([value,label])=>{
@@ -1344,10 +1366,13 @@ document.getElementById("track").addEventListener("click", ()=>{
   button.setAttribute("aria-pressed", track.on);
   button.textContent = track.on ? "Tracking on" : "Tracking";
   if(track.on && !track.store.trackers.length) openNameRow("new");
+  if(track.on) attachListener(activeTracker());
   render();
 });
 document.getElementById("trksel").addEventListener("change", e=>{
   track.store.active = e.target.value || null;
+  updateTrackerButtons();
+  attachListener(activeTracker());
   trackSave(); render();
 });
 document.getElementById("trknew").addEventListener("click", ()=>openNameRow("new"));
@@ -1362,7 +1387,7 @@ let deleteArmed = false, deleteTimer;
 function disarmDelete(){
   deleteArmed = false;
   clearTimeout(deleteTimer);
-  document.getElementById("trkdel").textContent = "Delete";
+  updateTrackerButtons();
 }
 document.getElementById("trkdel").addEventListener("click", ()=>{
   const tracker = activeTracker();
@@ -1370,15 +1395,20 @@ document.getElementById("trkdel").addEventListener("click", ()=>{
   if(!deleteArmed){
     deleteArmed = true;
     const ticks = Object.keys(tracker.fa).length;
-    document.getElementById("trkdel").textContent = `Delete ${ticks} tick${ticks===1?"":"s"}?`;
+    document.getElementById("trkdel").textContent = tracker.remote
+      ? "Leave shared tracker?"
+      : `Delete ${ticks} tick${ticks===1?"":"s"}?`;
     deleteTimer = setTimeout(disarmDelete, 5000);
     return;
   }
+  const wasShared = !!tracker.remote;
+  if(wasShared) detachListener(tracker.remote.code);
   disarmDelete();
   track.store.trackers = track.store.trackers.filter(t=>t.id!==tracker.id);
   track.store.active = track.store.trackers.length ? track.store.trackers[0].id : null;
   trackSave(); renderTrackerSelect(); render();
-  toast(`Deleted “${tracker.name}”`);
+  /* the shared document itself is left untouched — other teachers keep it */
+  toast(wasShared ? `Left “${tracker.name}”` : `Deleted “${tracker.name}”`);
 });
 document.getElementById("trksum").addEventListener("click", openSummary);
 document.getElementById("trkexp").addEventListener("click", trackExport);
@@ -1401,6 +1431,211 @@ radioChips(document.getElementById("trktermf"), TRACK_TERMS, track.term, value=>
 });
 radioChips(document.getElementById("trkviewf"), TRACK_VIEWS, track.view, value=>{
   track.view = value; render();
+});
+
+/* ---------- shared trackers ---------- */
+/* Paste the Firebase web config here to switch sharing on. These values are not
+   secrets — they identify the project, they do not grant access. All protection
+   comes from firestore.rules. Until this is filled in, Share and Join simply
+   report that sharing is not set up, and no Firebase code is ever fetched. */
+const FIREBASE_CONFIG = {
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE_AUTH_DOMAIN",
+  projectId: "PASTE_PROJECT_ID",
+  appId: "PASTE_APP_ID"
+};
+const FIREBASE_VERSION = "10.14.1";
+/* no 0/o/1/l/i, so a code read aloud or copied off a whiteboard is unambiguous */
+const SHARE_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
+
+const shareConfigured = () => !/^PASTE_/.test(FIREBASE_CONFIG.apiKey);
+
+function makeShareCode(){
+  const out = [];
+  const buf = new Uint8Array(1);
+  const limit = 256 - (256 % SHARE_ALPHABET.length);
+  while(out.length < 16){
+    crypto.getRandomValues(buf);
+    /* reject the tail of the byte range so every letter stays equally likely */
+    if(buf[0] >= limit) continue;
+    out.push(SHARE_ALPHABET[buf[0] % SHARE_ALPHABET.length]);
+  }
+  return out.join("").replace(/(.{4})(?=.)/g, "$1-");
+}
+
+/* The SDK is fetched on first use, never on page load, so the page stays a
+   single self-contained file for anyone who only tracks locally. */
+let firebasePromise = null;
+function firebaseReady(){
+  if(firebasePromise) return firebasePromise;
+  firebasePromise = (async ()=>{
+    const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
+    const [appMod, authMod, store] = await Promise.all([
+      import(base+"firebase-app.js"),
+      import(base+"firebase-auth.js"),
+      import(base+"firebase-firestore.js")
+    ]);
+    const app = appMod.initializeApp(FIREBASE_CONFIG);
+    await authMod.signInAnonymously(authMod.getAuth(app));
+    const db = store.initializeFirestore(app, {localCache: store.persistentLocalCache({})});
+    return {store, db};
+  })();
+  firebasePromise.catch(()=>{ firebasePromise = null; });
+  return firebasePromise;
+}
+const trackerRef = (fb, code) => fb.store.doc(fb.db, "trackers", code);
+
+const remoteListeners = new Map();
+async function attachListener(tracker){
+  if(!tracker || !tracker.remote || !shareConfigured()) return;
+  if(remoteListeners.has(tracker.remote.code)) return;
+  try{
+    const fb = await firebaseReady();
+    const stop = fb.store.onSnapshot(trackerRef(fb, tracker.remote.code),
+      snapshot=>{ if(snapshot.exists()) applyRemote(tracker, snapshot.data()); },
+      ()=>setSaved("Sync paused — still saved on this device", true));
+    remoteListeners.set(tracker.remote.code, stop);
+  }catch(_){ setSaved("Offline — saved on this device", true); }
+}
+function detachListener(code){
+  const stop = remoteListeners.get(code);
+  if(stop){ stop(); remoteListeners.delete(code); }
+}
+
+/* Repaint only what actually changed. A full render() here would throw away
+   scroll position and keyboard focus while a teacher is mid-list. */
+function applyRemote(tracker, data){
+  const live = tracker === activeTracker();
+  let changed = 0;
+  ["fa","pt"].forEach(kind=>{
+    const isPoint = kind === "pt";
+    const incoming = data[kind] || {};
+    const current = tracker[kind];
+    Object.keys(incoming).forEach(key=>{
+      if(!current[key] || current[key].t !== incoming[key].t){
+        current[key] = incoming[key];
+        changed++;
+        if(live) paintTick(key, isPoint);
+      }
+    });
+    Object.keys(current).forEach(key=>{
+      if(!incoming[key]){
+        delete current[key];
+        changed++;
+        if(live) paintTick(key, isPoint);
+      }
+    });
+  });
+  if(data.name && data.name !== tracker.name){
+    tracker.name = data.name;
+    renderTrackerSelect();
+  }
+  if(!changed) return;
+  trackSave();
+  /* a card may now belong on the other side of the taught / not-yet filter */
+  if(live && track.view !== "all") render();
+  else if(live) updateProgress(matches());
+  setSaved("Shared · updated just now", false);
+}
+
+async function pushTick(tracker, key, isPoint, value){
+  try{
+    const fb = await firebaseReady();
+    /* Most keys start with a digit, which makes dotted string paths invalid —
+       FieldPath sidesteps parsing entirely. */
+    const path = new fb.store.FieldPath(isPoint ? "pt" : "fa", key);
+    await fb.store.updateDoc(trackerRef(fb, tracker.remote.code),
+      path, value === null ? fb.store.deleteField() : value,
+      "updated", new Date().toISOString());
+    setSaved("Shared · synced", false);
+  }catch(_){
+    setSaved("Sync failed — saved on this device", true);
+  }
+}
+
+async function shareTracker(){
+  const tracker = activeTracker();
+  if(!tracker){ toast("Create a tracker first"); return; }
+  if(tracker.remote){ openShareRow("share", tracker.remote.code); return; }
+  if(!shareConfigured()){ toast("Sharing is not set up yet"); return; }
+  setSaved("Sharing…", false);
+  try{
+    const fb = await firebaseReady();
+    const code = makeShareCode();
+    await fb.store.setDoc(trackerRef(fb, code), {
+      name: tracker.name, created: tracker.created,
+      updated: new Date().toISOString(), fa: tracker.fa, pt: tracker.pt
+    });
+    tracker.remote = {code};
+    trackSave(); renderTrackerSelect(); attachListener(tracker);
+    openShareRow("share", code);
+    toast("Tracker shared");
+  }catch(_){
+    toast("Could not share — check your connection");
+    setSaved("Not shared — saved on this device", true);
+  }
+}
+
+async function joinTracker(raw){
+  const code = (raw || "").trim().toLowerCase();
+  if(!code){ toast("Paste a share code"); return; }
+  if(!shareConfigured()){ toast("Sharing is not set up yet"); return; }
+  const already = track.store.trackers.find(t=>t.remote && t.remote.code===code);
+  if(already){
+    track.store.active = already.id;
+    trackSave(); renderTrackerSelect(); render(); closeShareRow();
+    toast("You are already in that tracker");
+    return;
+  }
+  try{
+    const fb = await firebaseReady();
+    const snapshot = await fb.store.getDoc(trackerRef(fb, code));
+    if(!snapshot.exists()){ toast("No tracker with that code"); return; }
+    const data = snapshot.data();
+    const now = new Date().toISOString();
+    const tracker = {id:fnv1a(code), name:data.name || "Shared tracker",
+                     created:data.created || now, updated:data.updated || now,
+                     fa:data.fa || {}, pt:data.pt || {}, remote:{code}};
+    track.store.trackers.push(tracker);
+    track.store.active = tracker.id;
+    trackSave(); renderTrackerSelect(); render(); attachListener(tracker);
+    closeShareRow();
+    toast(`Joined “${tracker.name}”`);
+  }catch(_){
+    toast("Could not join — check the code and your connection");
+  }
+}
+
+/* ---------- share row ---------- */
+function openShareRow(mode, code){
+  const input = document.getElementById("trksharecode");
+  document.getElementById("trksharelabel").textContent = mode==="share" ? "Share code" : "Join a tracker";
+  input.value = code || "";
+  input.readOnly = mode === "share";
+  input.placeholder = mode==="share" ? "" : "paste the code your team shared";
+  document.getElementById("trkshareok").hidden = mode === "share";
+  document.getElementById("trksharecopy").hidden = mode !== "share";
+  document.getElementById("trksharemsg").textContent = mode==="share"
+    ? "Anyone with this code can view and tick this tracker."
+    : "";
+  document.getElementById("trksharerow").hidden = false;
+  input.focus();
+  if(mode==="share") input.select();
+}
+function closeShareRow(){
+  document.getElementById("trksharerow").hidden = true;
+}
+
+document.getElementById("trkshare").addEventListener("click", shareTracker);
+document.getElementById("trkjoin").addEventListener("click", ()=>openShareRow("join",""));
+document.getElementById("trkshareok").addEventListener("click", ()=>
+  joinTracker(document.getElementById("trksharecode").value));
+document.getElementById("trksharecopy").addEventListener("click", ()=>
+  copy(document.getElementById("trksharecode").value, "Share code copied"));
+document.getElementById("trksharecancel").addEventListener("click", closeShareRow);
+document.getElementById("trksharecode").addEventListener("keydown", e=>{
+  if(e.key==="Enter" && !e.target.readOnly){ e.preventDefault(); joinTracker(e.target.value); }
+  if(e.key==="Escape"){ e.preventDefault(); closeShareRow(); }
 });
 
 render();
