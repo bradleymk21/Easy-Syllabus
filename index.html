@@ -235,7 +235,7 @@ body.tracking .trackbar{display:block}
 .tprogsub b{color:#9FB0CC;font-weight:600}
 .saved{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#6F8A74}
 .saved.warn{color:#C98A3E}
-.sharecode{font-family:var(--mono);font-size:12.5px;letter-spacing:.06em}
+.sharecode{font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;flex:1 1 340px;min-width:200px}
 
 /* tick controls on cards */
 .fa-headrow{display:flex;align-items:flex-start}
@@ -396,7 +396,7 @@ body.noscroll{overflow:hidden}
         <div class="trackrow" id="trksharerow" hidden>
           <span class="flabel" id="trksharelabel">Share code</span>
           <input class="tsel sharecode" id="trksharecode" type="text" autocomplete="off"
-            spellcheck="false" style="max-width:260px" aria-label="Share code">
+            spellcheck="false" style="max-width:430px" aria-label="Share link or code">
           <button class="btn" id="trkshareok" type="button">Join</button>
           <button class="btn" id="trksharelink" type="button">Copy link</button>
           <button class="btn" id="trksharecopy" type="button">Copy code</button>
@@ -1562,7 +1562,11 @@ async function pushTick(tracker, key, isPoint, value){
 async function shareTracker(){
   const tracker = activeTracker();
   if(!tracker){ toast("Create a tracker first"); return; }
-  if(tracker.remote){ openShareRow("share", tracker.remote.code); return; }
+  if(tracker.remote){
+    openShareRow("share", tracker.remote.code);
+    copy(shareLink(tracker.remote.code), "Share link copied");
+    return;
+  }
   if(!shareConfigured()){ toast("Sharing is not set up yet"); return; }
   setSaved("Sharing…", false);
   try{
@@ -1575,7 +1579,7 @@ async function shareTracker(){
     tracker.remote = {code};
     trackSave(); renderTrackerSelect(); attachListener(tracker);
     openShareRow("share", code);
-    toast("Tracker shared");
+    copy(shareLink(code), "Share link copied — send it to your team");
   }catch(_){
     toast("Could not share — check your connection");
     setSaved("Not shared — saved on this device", true);
@@ -1583,7 +1587,8 @@ async function shareTracker(){
 }
 
 async function joinTracker(raw){
-  const code = (raw || "").trim().toLowerCase();
+  /* accept a pasted share link just as readily as a bare code */
+  const code = (raw || "").trim().toLowerCase().replace(/^.*[#&]join=/, "").replace(/[^a-z0-9-].*$/, "");
   if(!code){ toast("Paste a share code"); return; }
   if(!shareConfigured()){ toast("Sharing is not set up yet"); return; }
   const already = track.store.trackers.find(t=>t.remote && t.remote.code===code);
@@ -1615,19 +1620,25 @@ async function joinTracker(raw){
 /* ---------- share row ---------- */
 function openShareRow(mode, code){
   const input = document.getElementById("trksharecode");
-  document.getElementById("trksharelabel").textContent = mode==="share" ? "Share code" : "Join a tracker";
-  input.value = code || "";
+  document.getElementById("trksharelabel").textContent = mode==="share" ? "Share link" : "Join a tracker";
+  /* the field shows the link, because that is the thing people recognise and send */
+  document.getElementById("trksharerow").dataset.code = code || "";
+  input.value = mode==="share" && code ? shareLink(code) : "";
   input.readOnly = mode === "share";
-  input.placeholder = mode==="share" ? "" : "paste the code your team shared";
+  input.placeholder = mode==="share" ? "" : "paste the link or code a colleague sent you";
   document.getElementById("trkshareok").hidden = mode === "share";
   document.getElementById("trksharecopy").hidden = mode !== "share";
   document.getElementById("trksharelink").hidden = mode !== "share";
   document.getElementById("trksharemsg").textContent = mode==="share"
-    ? "Send the link. Anyone who opens it joins this tracker and can tick it."
-    : "Paste the code a colleague sent you.";
+    ? "Copied. Anyone who opens this link joins the tracker and can tick it."
+    : "Paste the link or code a colleague sent you.";
   document.getElementById("trksharerow").hidden = false;
   input.focus();
-  if(mode==="share") input.select();
+  if(mode==="share"){
+    input.select();
+    /* selecting scrolls to the end, which makes a link read as a bare code */
+    input.scrollLeft = 0;
+  }
 }
 function closeShareRow(){
   document.getElementById("trksharerow").hidden = true;
@@ -1651,9 +1662,9 @@ document.getElementById("trkjoin").addEventListener("click", ()=>openShareRow("j
 document.getElementById("trkshareok").addEventListener("click", ()=>
   joinTracker(document.getElementById("trksharecode").value));
 document.getElementById("trksharecopy").addEventListener("click", ()=>
-  copy(document.getElementById("trksharecode").value, "Share code copied"));
+  copy(document.getElementById("trksharerow").dataset.code, "Share code copied"));
 document.getElementById("trksharelink").addEventListener("click", ()=>
-  copy(shareLink(document.getElementById("trksharecode").value), "Share link copied"));
+  copy(document.getElementById("trksharecode").value, "Share link copied"));
 document.getElementById("topjoin").addEventListener("click", ()=>{
   if(!track.on) setTracking(true, false);
   closeNameRow();
