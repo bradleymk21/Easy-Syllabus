@@ -854,14 +854,20 @@ const state = {q:"", kla:new Set(), year:new Set(), part:new Set(), open:new Set
                groupOpen:new Set(), showAll:new Set(), allOpen:false};
 const workState = {q:"", kla:new Set(), year:new Set(), format:new Set(), subject:""};
 
+/* Search only the syllabus wording teachers plan against: focus areas,
+   outcomes and content points. Supporting notes and examples stay browseable. */
+function syllabusSearchText(r){
+  return (r.t+" "+
+    r.o.map(o=>o.c+" "+o.d).join(" ")+" "+
+    r.g.map(g=>g.i.map(it=>it.t).join(" ")).join(" ")).toLowerCase();
+}
+
 /* search index */
 DATA.forEach((r,i)=>{
   r._i=i;
   r._years=STAGE_YEARS[r.st] || [];
   r._part=r.k==="ma" ? (r.t.match(/ ([AB])$/)?.[1] || "") : "";
-  r._s=(r.t+" "+r.kla+" "+r.sh+" "+r._years.join(" ")+" "+
-    r.o.map(o=>o.c+" "+o.d).join(" ")+" "+
-    r.g.map(g=>g.t+" "+g.i.map(it=>it.t+" "+it.n+" "+it.e).join(" ")).join(" ")).toLowerCase();
+  r._s=syllabusSearchText(r);
 });
 WORK_SAMPLES.forEach((collection,index)=>{
   collection._i=index;
@@ -954,7 +960,7 @@ function matches(){
 function cps(r){
   const all=[]; r.g.forEach(g=>g.i.forEach(it=>all.push([g,it])));
   if(!terms().length) return {list:all, filtered:false, total:all.length};
-  const m=all.filter(([g,it])=>hit(g.t+" "+it.t+" "+it.n+" "+it.e) || hit(r.t));
+  const m=all.filter(([,it])=>hit(it.t) || hit(r.t));
   return {list:m.length?m:all, filtered:m.length>0&&m.length<all.length, total:all.length};
 }
 function outs(r){
@@ -1012,7 +1018,7 @@ function faHTML(r){
           const groupCount=pairs.filter(([pairGroup])=>pairGroup===g).length;
           const groupOpen=state.allOpen || searching || state.groupOpen.has(groupKey);
           h += `<details class="grp" data-group="${groupKey}"${groupOpen?' open':''}>`+
-            `<summary class="grpt"><span>${hl(g.t)}</span><span class="grpcount">${groupCount}</span></summary>`+
+            `<summary class="grpt"><span>${esc(g.t)}</span><span class="grpcount">${groupCount}</span></summary>`+
             `<ul class="cps">`;
           cur=g;
         }
@@ -1022,11 +1028,10 @@ function faHTML(r){
           `<button class="ptick" type="button" role="checkbox" aria-checked="${!!ptTick}" data-pk="${pk}"` +
           ` aria-label="Mark this content point as taught">&#10003;</button>` +
           `<button class="cbtn" data-copy="${esc(it.t)}">copy</button>${hl(it.t)}`;
-        if(it.n) h += `<span class="meta"><b>Including:</b> ${hl(it.n)}</span>`;
+        if(it.n) h += `<span class="meta"><b>Including:</b> ${esc(it.n)}</span>`;
         if(it.e){
-          const exampleOpen = searching && hit(it.e);
-          h += `<details class="meta example"${exampleOpen?' open':''}><summary>For example</summary>` +
-            `<span class="example-text">${hl(it.e)}</span></details>`;
+          h += `<details class="meta example"><summary>For example</summary>` +
+            `<span class="example-text">${esc(it.e)}</span></details>`;
         }
         h += `</li>`;
       });
