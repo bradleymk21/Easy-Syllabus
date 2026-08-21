@@ -314,6 +314,11 @@ body.noscroll{overflow:hidden}
   background:#fff;color:var(--ink-2);cursor:pointer}
 .sheetbtn:hover{background:#F2F5FA;color:var(--ink)}
 .sheetbtn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.confirmbox{align-self:center;width:100%;max-width:470px;padding:24px 26px;border-radius:14px;
+  background:#fff;box-shadow:0 18px 50px rgba(10,18,32,.34)}
+.confirmbox h2{margin:0 0 9px;font-size:20px;letter-spacing:-.015em;color:var(--brand)}
+.confirmbox p{margin:0;color:var(--ink-2);font-size:14.5px;line-height:1.55}
+.confirmactions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:9px;margin-top:20px}
 .sumtotals{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
 .sumtile{flex:1;min-width:130px;border:1px solid var(--line);border-radius:9px;padding:10px 13px}
 .sumtile .n{font-size:21px;font-weight:700;letter-spacing:-.02em}
@@ -814,6 +819,17 @@ body.noscroll{overflow:hidden}
 
 <div class="modal" id="summary" hidden>
   <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Teaching summary"></div>
+</div>
+<div class="modal" id="planconfirm" hidden>
+  <div class="confirmbox" role="alertdialog" aria-modal="true"
+    aria-labelledby="planconfirmtitle" aria-describedby="planconfirmtext">
+    <h2 id="planconfirmtitle"></h2>
+    <p id="planconfirmtext"></p>
+    <div class="confirmactions">
+      <button class="btn danger" id="planconfirmgo" type="button"></button>
+      <button class="btn" id="planconfirmcancel" type="button">Cancel</button>
+    </div>
+  </div>
 </div>
 <input type="file" id="trkfile" accept="application/json,.json" hidden>
 <input type="file" id="toddlefile" accept=".xlsx" hidden>
@@ -1455,7 +1471,7 @@ function renderTrackerSelect(){
 function updateTrackerButtons(){
   const shared = !!(activeTracker() && activeTracker().remote);
   document.getElementById("trkshare").textContent = shared ? "Show code" : "Share";
-  if(!deleteArmed) document.getElementById("trkdel").textContent = shared ? "Leave" : "Delete";
+  document.getElementById("trkdel").textContent = shared ? "Leave this plan" : "Delete this plan";
 }
 function radioChips(host, items, current, onpick){
   items.forEach(([value,label])=>{
@@ -1687,12 +1703,6 @@ document.getElementById("trkname").addEventListener("keydown", e=>{
   if(e.key==="Enter"){ e.preventDefault(); commitNameRow(); }
   if(e.key==="Escape"){ e.preventDefault(); closeNameRow(); }
 });
-let deleteArmed = false, deleteTimer;
-function disarmDelete(){
-  deleteArmed = false;
-  clearTimeout(deleteTimer);
-  updateTrackerButtons();
-}
 function removeTracker(tracker){
   const wasShared = !!tracker.remote;
   if(wasShared) detachListener(tracker.remote.code);
@@ -1705,20 +1715,37 @@ function removeTracker(tracker){
   /* the shared document itself is left untouched — other teachers keep it */
   toast(wasShared ? `Left “${tracker.name}”` : `Deleted “${tracker.name}”`);
 }
-document.getElementById("trkdel").addEventListener("click", ()=>{
+let pendingPlanRemoval = null;
+function openPlanRemovalConfirmation(){
   const tracker = activeTracker();
   if(!tracker){ toast("No plan to delete"); return; }
-  if(!deleteArmed){
-    deleteArmed = true;
-    const ticks = Object.keys(tracker.fa).length;
-    document.getElementById("trkdel").textContent = tracker.remote
-      ? "Leave shared plan?"
-      : `Delete ${ticks} tick${ticks===1?"":"s"}?`;
-    deleteTimer = setTimeout(disarmDelete, 5000);
-    return;
-  }
-  disarmDelete();
-  removeTracker(tracker);
+  pendingPlanRemoval = tracker.id;
+  const shared = !!tracker.remote;
+  document.getElementById("planconfirmtitle").textContent =
+    `${shared ? "Leave" : "Delete"} “${tracker.name}”?`;
+  document.getElementById("planconfirmtext").textContent = shared
+    ? "This removes the shared planner from this browser. It does not delete it for anyone else."
+    : "This permanently removes all of this planner’s units and teaching ticks from this browser. This cannot be undone.";
+  document.getElementById("planconfirmgo").textContent = shared ? "Leave planner" : "Delete planner";
+  document.getElementById("planconfirm").hidden = false;
+  document.body.classList.add("noscroll");
+  document.getElementById("planconfirmcancel").focus();
+}
+function closePlanRemovalConfirmation(){
+  pendingPlanRemoval = null;
+  document.getElementById("planconfirm").hidden = true;
+  if(document.getElementById("summary").hidden) document.body.classList.remove("noscroll");
+  document.getElementById("trkmore").focus();
+}
+document.getElementById("trkdel").addEventListener("click", openPlanRemovalConfirmation);
+document.getElementById("planconfirmcancel").addEventListener("click", closePlanRemovalConfirmation);
+document.getElementById("planconfirmgo").addEventListener("click", ()=>{
+  const tracker = track.store.trackers.find(item=>item.id===pendingPlanRemoval);
+  closePlanRemovalConfirmation();
+  if(tracker) removeTracker(tracker);
+});
+document.getElementById("planconfirm").addEventListener("click", e=>{
+  if(e.target.id==="planconfirm") closePlanRemovalConfirmation();
 });
 document.getElementById("trksum").addEventListener("click", openSummary);
 document.getElementById("trkexp").addEventListener("click", trackExport);
@@ -1732,6 +1759,9 @@ document.getElementById("summary").addEventListener("click", e=>{
   unitDraft ? closeUnit() : closeSummary();
 });
 document.addEventListener("keydown", e=>{
+  if(e.key==="Escape" && !document.getElementById("planconfirm").hidden){
+    e.preventDefault(); closePlanRemovalConfirmation(); return;
+  }
   if(e.key==="Escape" && !document.getElementById("summary").hidden){
     unitDraft ? closeUnit() : closeSummary();
   }
