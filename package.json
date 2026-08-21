@@ -1,0 +1,9 @@
+{
+  "name": "easy-syllabus",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check app.js && node --check planner-model.js",
+    "test": "node --test"
+  }
+}
