@@ -2065,6 +2065,11 @@ function scopeStartHTML(){
           <span class="so-t">Set it up myself</span>
           <span class="so-d">One line to fill in, then an empty planner.</span>
         </button>
+        <button class="startopt" type="button" data-start="toddle">
+          <span class="so-t">Import from Toddle</span>
+          <span class="so-d">Already planned your units? Bring them straight in,
+            with their syllabus content attached.</span>
+        </button>
       </div>
     </div>`;
   }
@@ -2524,6 +2529,9 @@ document.getElementById("scopeout").addEventListener("click", e=>{
     } else if(action === "self"){
       setTracking(true, false);
       openNameRow("new");
+      return;
+    } else if(action === "toddle"){
+      document.getElementById("toddlefile").click();
       return;
     } else if(action === "cancel"){
       scopeSetup = null;
@@ -2987,9 +2995,19 @@ const TODDLE_GROUPS = [
   ["stale",     "From a previous year",   false]
 ];
 
+/* the year named most often in the file is the year the file is about */
+function dominantYear(sheets){
+  const tally = {};
+  sheets.forEach(sh=>sh.rows.forEach(row=>{
+    const m = String(row[0]||"").match(YEAR_IN_TITLE);
+    if(!m) return;
+    const y = m[0].replace(/kindergartern/i,"Kindergarten").replace(/\s+/g," ")
+      .replace(/^year/i,"Year").trim();
+    if(YEAR_TO_STAGE[y]) tally[y] = (tally[y]||0) + 1;
+  }));
+  return Object.entries(tally).sort((a,b)=>b[1]-a[1])[0];
+}
 async function handleToddleFile(file){
-  const plan = activeTracker();
-  if(!plan){ toast("Create a plan first"); return; }
   if(typeof DecompressionStream !== "function"){
     toast("This browser is too old to read .xlsx — try Chrome, Edge or Safari 17");
     return;
@@ -2999,6 +3017,15 @@ async function handleToddleFile(file){
   try{ sheets = await readWorkbook(await file.arrayBuffer()); }
   catch(_){ toast("That file is not a readable .xlsx"); return; }
 
+  let plan = activeTracker();
+  if(!plan){
+    const found = dominantYear(sheets);
+    if(!found){ toast("No year group found in that file — create a plan first"); return; }
+    plan = makeTracker(found[0] + " — " + new Date().getFullYear());
+    plan.year = found[0];
+    setTracking(true, false);
+    applyTrackerYear(); trackSave(); renderTrackerSelect();
+  }
   const stage = YEAR_TO_STAGE[plan.year] || "";
   const units = parseToddleWorkbook(sheets, stage);
   if(!units.length){
