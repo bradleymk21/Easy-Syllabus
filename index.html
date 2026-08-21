@@ -359,6 +359,13 @@ body.noscroll{overflow:hidden}
 .startlead{margin:0 0 16px;font-size:14px;color:var(--ink-2);line-height:1.5}
 .startstep{font-family:var(--mono);font-size:12px;letter-spacing:.09em;text-transform:uppercase;
   color:var(--ink-3);margin-bottom:6px;font-weight:500}
+.startresume{padding:16px;border:1px solid #D8C77D;border-radius:11px;background:#FFFCF1;margin-bottom:18px}
+.startresume .startstep{display:block;color:var(--brand);margin-bottom:8px}
+.startresume-row{display:flex;flex-wrap:wrap;gap:9px;align-items:stretch}
+.startplan{flex:1;min-width:230px;margin:0;background:#fff}
+.startor{display:flex;align-items:center;gap:10px;margin:0 0 12px;color:var(--ink-3);
+  font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+.startor::before,.startor::after{content:"";height:1px;background:var(--line);flex:1}
 .startopts{display:flex;gap:12px;flex-wrap:wrap}
 .startopt{flex:1;min-width:210px;text-align:left;font:inherit;cursor:pointer;padding:15px 16px;
   border-radius:11px;border:1px solid var(--line);background:#FFFDFA}
@@ -2046,16 +2053,31 @@ function renderScope(){
 }
 
 /* ---------- getting started ---------- */
-/* Two ways in, because being walked through it and being left alone are both
-   reasonable preferences. Guided asks two questions on their own screens; setting
-   it up yourself reuses the one-line name-and-year row already in the plan bar. */
+/* Returning teachers can resume a saved plan. For a new plan, guided asks two
+   questions on their own screens while self-setup reuses the name-and-year row. */
 let scopeSetup = null;
 function scopeStartHTML(){
   if(!scopeSetup){
+    const plans = track.store.trackers;
+    const activeId = plans.some(plan=>plan.id===track.store.active)
+      ? track.store.active : (plans[0] && plans[0].id);
+    const resume = plans.length ? `<div class="startresume">
+      <label class="startstep" for="scopeplanselect">Continue with your planning for&hellip;</label>
+      <div class="startresume-row">
+        <select class="uinput startplan" id="scopeplanselect">` + plans.map(plan=>{
+          const count = Object.keys(unitsOf(plan)).length;
+          const details = [plan.year, `${count} unit${count===1?"":"s"}`].filter(Boolean).join(" \u00b7 ");
+          return `<option value="${esc(plan.id)}"${plan.id===activeId?" selected":""}>${esc(plan.name)}${details?" \u2014 "+esc(details):""}</option>`;
+        }).join("") + `</select>
+        <button class="btn primary" type="button" data-start="continue">Continue planning</button>
+      </div>
+    </div><div class="startor">or start something new</div>` : "";
     return `<div class="startcard">
-      <h2>Plan your year</h2>
-      <p class="startlead">A scope and sequence lays your units of work across the four terms,
-        and links each one to the syllabus content it covers.</p>
+      <h2>${plans.length ? "Welcome back" : "Plan your year"}</h2>
+      <p class="startlead">${plans.length
+        ? "Pick up an existing scope and sequence, or start a new one."
+        : "A scope and sequence lays your units of work across the four terms, and links each one to the syllabus content it covers."}</p>
+      ${resume}
       <div class="startopts">
         <button class="startopt" type="button" data-start="guided">
           <span class="so-t">Guided setup</span>
@@ -2524,13 +2546,26 @@ document.getElementById("scopeout").addEventListener("click", e=>{
   const start = e.target.closest("[data-start]");
   if(start){
     const action = start.dataset.start;
-    if(action === "guided"){
+    if(action === "continue"){
+      const selected = document.getElementById("scopeplanselect")?.value;
+      if(selected && track.store.trackers.some(plan=>plan.id===selected)) track.store.active = selected;
+      scopeSetup = null;
+      setTracking(true, false);
+      trackSave(); renderTrackerSelect(); renderScope();
+      return;
+    } else if(action === "guided"){
       scopeSetup = {step:"year", year:"", name:""};
     } else if(action === "self"){
       setTracking(true, false);
       openNameRow("new");
       return;
     } else if(action === "toddle"){
+      const selected = document.getElementById("scopeplanselect")?.value;
+      if(selected && track.store.trackers.some(plan=>plan.id===selected)){
+        track.store.active = selected;
+        setTracking(true, false);
+        trackSave(); renderTrackerSelect(); renderScope();
+      }
       document.getElementById("toddlefile").click();
       return;
     } else if(action === "cancel"){
