@@ -854,11 +854,10 @@ const state = {q:"", kla:new Set(), year:new Set(), part:new Set(), open:new Set
                groupOpen:new Set(), showAll:new Set(), allOpen:false};
 const workState = {q:"", kla:new Set(), year:new Set(), format:new Set(), subject:""};
 
-/* Search only the syllabus wording teachers plan against: focus areas,
-   outcomes and content points. Supporting notes and examples stay browseable. */
+/* Search only outcomes and content points. Supporting labels, notes and
+   examples stay browseable without creating search matches. */
 function syllabusSearchText(r){
-  return (r.t+" "+
-    r.o.map(o=>o.c+" "+o.d).join(" ")+" "+
+  return (r.o.map(o=>o.c+" "+o.d).join(" ")+" "+
     r.g.map(g=>g.i.map(it=>it.t).join(" ")).join(" ")).toLowerCase();
 }
 
@@ -960,7 +959,7 @@ function matches(){
 function cps(r){
   const all=[]; r.g.forEach(g=>g.i.forEach(it=>all.push([g,it])));
   if(!terms().length) return {list:all, filtered:false, total:all.length};
-  const m=all.filter(([,it])=>hit(it.t) || hit(r.t));
+  const m=all.filter(([,it])=>hit(it.t));
   return {list:m.length?m:all, filtered:m.length>0&&m.length<all.length, total:all.length};
 }
 function outs(r){
@@ -991,7 +990,7 @@ function faHTML(r){
           <span class="tag stage" title="${esc(r.st)}">${esc(yearLabel(r))}</span>
           ${soon?'<span class="tag soon">New 2027</span>':''}
         </span>
-        <span class="fa-t">${hl(r.t)}</span>
+        <span class="fa-t">${esc(r.t)}</span>
         <span class="codes">${r.o.filter(o=>o.c).map(o=>`<span class="code">${hl(o.c)}</span>`).join("")}</span>
       </span>
       <span class="count">${ncp}</span>
