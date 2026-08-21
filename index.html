@@ -363,6 +363,16 @@ body.noscroll{overflow:hidden}
 .startresume .startstep{display:block;color:var(--brand);margin-bottom:8px}
 .startresume-row{display:flex;flex-wrap:wrap;gap:9px;align-items:stretch}
 .startplan{flex:1;min-width:230px;margin:0;background:#fff}
+.startdelete{flex:none;width:42px;border:1px solid #D8C9C9;border-radius:8px;background:#fff;
+  color:#8B3B45;font:600 21px/1 var(--sans);cursor:pointer}
+.startdelete:hover{border-color:#A8324F;background:#FFF5F7;color:#A8324F}
+.startdelete:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.startconfirm{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:12px;padding-top:12px;
+  border-top:1px solid #E3D9B4}
+.startconfirm-msg{flex:1;min-width:230px;font-size:13.5px;line-height:1.4;color:var(--ink-2)}
+.startconfirm-msg b{color:var(--ink)}
+.btn.danger{background:#A8324F;border-color:#A8324F;color:#fff;font-weight:650}
+.btn.danger:hover{background:#8C263F;border-color:#8C263F;color:#fff}
 .startor{display:flex;align-items:center;gap:10px;margin:0 0 12px;color:var(--ink-3);
   font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase}
 .startor::before,.startor::after{content:"";height:1px;background:var(--line);flex:1}
@@ -1677,6 +1687,18 @@ function disarmDelete(){
   clearTimeout(deleteTimer);
   updateTrackerButtons();
 }
+function removeTracker(tracker){
+  const wasShared = !!tracker.remote;
+  if(wasShared) detachListener(tracker.remote.code);
+  track.store.trackers = track.store.trackers.filter(item=>item.id!==tracker.id);
+  if(track.store.active===tracker.id){
+    track.store.active = track.store.trackers.length ? track.store.trackers[0].id : null;
+  }
+  applyTrackerYear();
+  trackSave(); renderTrackerSelect(); render();
+  /* the shared document itself is left untouched — other teachers keep it */
+  toast(wasShared ? `Left “${tracker.name}”` : `Deleted “${tracker.name}”`);
+}
 document.getElementById("trkdel").addEventListener("click", ()=>{
   const tracker = activeTracker();
   if(!tracker){ toast("No plan to delete"); return; }
@@ -1689,14 +1711,8 @@ document.getElementById("trkdel").addEventListener("click", ()=>{
     deleteTimer = setTimeout(disarmDelete, 5000);
     return;
   }
-  const wasShared = !!tracker.remote;
-  if(wasShared) detachListener(tracker.remote.code);
   disarmDelete();
-  track.store.trackers = track.store.trackers.filter(t=>t.id!==tracker.id);
-  track.store.active = track.store.trackers.length ? track.store.trackers[0].id : null;
-  trackSave(); renderTrackerSelect(); render();
-  /* the shared document itself is left untouched — other teachers keep it */
-  toast(wasShared ? `Left “${tracker.name}”` : `Deleted “${tracker.name}”`);
+  removeTracker(tracker);
 });
 document.getElementById("trksum").addEventListener("click", openSummary);
 document.getElementById("trkexp").addEventListener("click", trackExport);
@@ -2055,12 +2071,14 @@ function renderScope(){
 /* ---------- getting started ---------- */
 /* Returning teachers can resume a saved plan. For a new plan, guided asks two
    questions on their own screens while self-setup reuses the name-and-year row. */
-let scopeSetup = null;
+let scopeSetup = null, scopePlanChoice = null, scopeDeleteId = null;
 function scopeStartHTML(){
   if(!scopeSetup){
     const plans = track.store.trackers;
-    const activeId = plans.some(plan=>plan.id===track.store.active)
-      ? track.store.active : (plans[0] && plans[0].id);
+    const activeId = plans.some(plan=>plan.id===scopePlanChoice) ? scopePlanChoice
+      : plans.some(plan=>plan.id===track.store.active) ? track.store.active
+      : (plans[0] && plans[0].id);
+    const deleting = plans.find(plan=>plan.id===scopeDeleteId);
     const resume = plans.length ? `<div class="startresume">
       <label class="startstep" for="scopeplanselect">Continue with your planning for&hellip;</label>
       <div class="startresume-row">
@@ -2069,8 +2087,18 @@ function scopeStartHTML(){
           const details = [plan.year, `${count} unit${count===1?"":"s"}`].filter(Boolean).join(" \u00b7 ");
           return `<option value="${esc(plan.id)}"${plan.id===activeId?" selected":""}>${esc(plan.name)}${details?" \u2014 "+esc(details):""}</option>`;
         }).join("") + `</select>
+        <button class="startdelete" type="button" data-start-delete
+          aria-label="Delete selected planner" title="Delete selected planner">&times;</button>
         <button class="btn primary" type="button" data-start="continue">Continue planning</button>
       </div>
+      ${deleting ? `<div class="startconfirm" role="alert">
+        <span class="startconfirm-msg"><b>${deleting.remote ? "Leave" : "Delete"} &ldquo;${esc(deleting.name)}&rdquo;?</b>
+          ${deleting.remote
+            ? "It will disappear from this browser. Other teachers will keep the shared planner."
+            : "This permanently removes its units and ticks from this browser."}</span>
+        <button class="btn danger" type="button" data-start="deleteconfirm">${deleting.remote ? "Leave planner" : "Delete planner"}</button>
+        <button class="btn" type="button" data-start="deletecancel">Cancel</button>
+      </div>` : ""}
     </div><div class="startor">or start something new</div>` : "";
     return `<div class="startcard">
       <h2>${plans.length ? "Welcome back" : "Plan your year"}</h2>
@@ -2126,6 +2154,7 @@ function scopeStartHTML(){
 function createPlan(year, name){
   const plan = makeTracker(name.trim() || ("My plan — " + new Date().getFullYear()));
   plan.year = year || "";
+  scopePlanChoice = plan.id;
   scopeSetup = null;
   setTracking(true, false);   /* internal: the word "tracking" is never shown */
   applyTrackerYear();
@@ -2548,10 +2577,24 @@ document.getElementById("scopeout").addEventListener("click", e=>{
     const action = start.dataset.start;
     if(action === "continue"){
       const selected = document.getElementById("scopeplanselect")?.value;
-      if(selected && track.store.trackers.some(plan=>plan.id===selected)) track.store.active = selected;
+      if(selected && track.store.trackers.some(plan=>plan.id===selected)){
+        scopePlanChoice = selected;
+        track.store.active = selected;
+      }
       scopeSetup = null;
       setTracking(true, false);
       trackSave(); renderTrackerSelect(); renderScope();
+      return;
+    } else if(action === "deleteconfirm"){
+      const tracker = track.store.trackers.find(plan=>plan.id===scopeDeleteId);
+      if(!tracker){ scopeDeleteId = null; renderScope(); return; }
+      scopeDeleteId = null;
+      scopePlanChoice = track.store.trackers.find(plan=>plan.id!==tracker.id)?.id || null;
+      removeTracker(tracker);
+      return;
+    } else if(action === "deletecancel"){
+      scopeDeleteId = null;
+      renderScope();
       return;
     } else if(action === "guided"){
       scopeSetup = {step:"year", year:"", name:""};
@@ -2562,6 +2605,7 @@ document.getElementById("scopeout").addEventListener("click", e=>{
     } else if(action === "toddle"){
       const selected = document.getElementById("scopeplanselect")?.value;
       if(selected && track.store.trackers.some(plan=>plan.id===selected)){
+        scopePlanChoice = selected;
         track.store.active = selected;
         setTracking(true, false);
         trackSave(); renderTrackerSelect(); renderScope();
@@ -2585,6 +2629,17 @@ document.getElementById("scopeout").addEventListener("click", e=>{
     if(field){ field.focus(); field.select(); }
     return;
   }
+  const deletePick = e.target.closest("[data-start-delete]");
+  if(deletePick){
+    const selected = document.getElementById("scopeplanselect")?.value;
+    if(selected && track.store.trackers.some(plan=>plan.id===selected)){
+      scopePlanChoice = selected;
+      scopeDeleteId = selected;
+      renderScope();
+      document.querySelector('[data-start="deleteconfirm"]')?.focus();
+    }
+    return;
+  }
   const yearChip = e.target.closest("[data-year]");
   if(yearChip && scopeSetup){
     scopeSetup.year = yearChip.dataset.year;
@@ -2598,6 +2653,11 @@ document.getElementById("scopeout").addEventListener("click", e=>{
     const [kla,term] = add.dataset.add.split("|");
     openUnit(null, {kla, term});
   }
+});
+document.getElementById("scopeout").addEventListener("change", e=>{
+  if(e.target.id!=="scopeplanselect") return;
+  scopePlanChoice = e.target.value || null;
+  scopeDeleteId = null;
 });
 document.getElementById("scopeprint").addEventListener("click", ()=>{
   document.body.classList.add("scopeprint");
