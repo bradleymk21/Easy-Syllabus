@@ -55,6 +55,9 @@ h1{margin:0;font-size:21px;font-weight:700;letter-spacing:-.015em;color:var(--br
 .viewtab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 .filterdrawer{margin-top:10px}
+/* the drawer leads the controls now, with the search box beneath it */
+#content-controls>.filterdrawer:first-child,#work-controls>.filterdrawer:first-child{margin-top:0}
+.filterdrawer+.searchrow{margin-top:13px}
 .filterdrawer>summary{display:none;align-items:center;justify-content:space-between;gap:12px;
   padding:9px 11px;border:1px solid var(--chrome-line);border-radius:9px;background:var(--chrome-well);
   color:var(--chrome-text);cursor:pointer;font-size:14px;font-weight:650;list-style:none}

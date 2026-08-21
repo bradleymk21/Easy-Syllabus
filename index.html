@@ -31,6 +31,20 @@
         aria-controls="work-samples-view" data-view="work-samples">Work samples</button>
     </div>
     <div id="content-controls">
+      <details class="filterdrawer" id="contentfilterdrawer">
+        <summary><span>Filters</span><span class="filtersummary" id="contentfiltersummary">All years · All syllabuses</span></summary>
+        <div class="filterbody">
+          <div class="filters">
+            <div class="fgroup" id="yearf"><span class="flabel">Year group</span></div>
+          </div>
+          <div class="filters">
+            <div class="fgroup" id="klaf"><span class="flabel">Syllabus</span></div>
+            <div class="fgroup" id="partf"><span class="flabel">Maths part</span></div>
+          </div>
+          <p class="filterhelp">Year groups focus the matching NESA stage. Maths Parts A and B are learning
+            sequences, not year levels, so either can be selected for any year in its stage.</p>
+        </div>
+      </details>
       <div class="searchrow">
         <input id="q" type="search" autocomplete="off" spellcheck="false"
           placeholder="Search outcomes and content points, e.g. fractions, Songlines, online safety">
@@ -46,20 +60,6 @@
           </span>
         </span>
       </div>
-      <details class="filterdrawer" id="contentfilterdrawer">
-        <summary><span>Filters</span><span class="filtersummary" id="contentfiltersummary">All years · All syllabuses</span></summary>
-        <div class="filterbody">
-          <div class="filters">
-            <div class="fgroup" id="yearf"><span class="flabel">Year group</span></div>
-          </div>
-          <div class="filters">
-            <div class="fgroup" id="klaf"><span class="flabel">Syllabus</span></div>
-            <div class="fgroup" id="partf"><span class="flabel">Maths part</span></div>
-          </div>
-          <p class="filterhelp">Year groups focus the matching NESA stage. Maths Parts A and B are learning
-            sequences, not year levels, so either can be selected for any year in its stage.</p>
-        </div>
-      </details>
     </div>
       <div class="trackbar" id="trackbar">
         <div class="trackrow trackmain">
@@ -117,11 +117,6 @@
         </div>
       </div>
     <div id="work-controls" hidden>
-      <div class="searchrow">
-        <input id="wsq" type="search" autocomplete="off" spellcheck="false"
-          placeholder="Search work samples, e.g. perimeter, narrative, dance, algorithms">
-        <button class="btn" id="wsreset">Reset</button>
-      </div>
       <details class="filterdrawer" id="workfilterdrawer">
         <summary><span>Filters</span><span class="filtersummary" id="workfiltersummary">All years · All learning areas</span></summary>
         <div class="filterbody">
@@ -141,6 +136,11 @@
           <p class="filterhelp">Kindergarten corresponds to Foundation Year on the Australian Curriculum site. Select multiple year groups or formats to broaden results.</p>
         </div>
       </details>
+      <div class="searchrow">
+        <input id="wsq" type="search" autocomplete="off" spellcheck="false"
+          placeholder="Search work samples, e.g. perimeter, narrative, dance, algorithms">
+        <button class="btn" id="wsreset">Reset</button>
+      </div>
     </div>
   </div>
 </div>
