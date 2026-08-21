@@ -561,6 +561,7 @@ body.noscroll{overflow:hidden}
       <div class="trackbar" id="trackbar">
         <div class="trackrow">
           <select class="tsel" id="trksel" aria-label="Active plan"></select>
+          <button class="btn" id="trkquicknew" type="button">+ New plan</button>
           <div class="termtiles" id="trktermf" role="group" aria-label="Record new ticks as"></div>
           <span class="tprog tprogstack">
             <span class="tprogline">
@@ -1435,9 +1436,10 @@ function trackScope(){
 function renderTrackerSelect(){
   const select = document.getElementById("trksel");
   select.innerHTML = "";
+  select.disabled = !track.store.trackers.length;
   if(!track.store.trackers.length){
     const option = document.createElement("option");
-    option.value = ""; option.textContent = "No plan yet — choose New";
+    option.value = ""; option.textContent = "No plan yet";
     select.appendChild(option);
   } else {
     track.store.trackers.forEach(tracker=>{
@@ -1676,6 +1678,7 @@ document.getElementById("trksel").addEventListener("change", e=>{
   attachListener(activeTracker());
   trackSave(); render();
 });
+document.getElementById("trkquicknew").addEventListener("click", ()=>openNameRow("new"));
 document.getElementById("trknew").addEventListener("click", ()=>openNameRow("new"));
 document.getElementById("trkren").addEventListener("click", ()=>openNameRow("rename"));
 document.getElementById("trknameok").addEventListener("click", commitNameRow);
