@@ -1479,19 +1479,30 @@ function radioChips(host, items, current, onpick){
 }
 
 /* ---------- summary sheet ---------- */
+/* A focus area represents teaching as soon as either the whole area or any one of
+   its content points is ticked. The summary is evidence of coverage, not a test
+   that every content point has been completed. Keep every term represented when
+   teachers return to the same focus area later in the year. */
+function teachingTermsFor(tracker, focusArea){
+  const terms = new Set();
+  const remember = tick=>{ if(tick && tick.t) terms.add(tick.t); };
+  remember(tracker.fa[focusArea._fk]);
+  focusArea.g.forEach(group=>group.i.forEach(point=>remember(tracker.pt[point._pk])));
+  return TRACK_TERMS.map(([value])=>value).filter(value=>terms.has(value));
+}
 function summaryHTML(){
   const tracker = activeTracker();
   const scope = trackScope();
   const rows = scope.map(r=>{
-    const tick = tracker.fa[faKey(r)];
+    const terms = teachingTermsFor(tracker, r);
     const points = r.g.reduce((a,g)=>a+g.i.length,0);
-    const donePoints = r.g.reduce((a,g)=>a+g.i.filter(it=>tracker.pt[ptKey(r,g,it)]).length,0);
-    return {r, term:tick?tick.t:null, points, donePoints};
+    const donePoints = r.g.reduce((a,g)=>a+g.i.filter(it=>tracker.pt[it._pk]).length,0);
+    return {r, terms, term:terms.join("/"), points, donePoints};
   });
-  const taught = rows.filter(row=>row.term);
+  const taught = rows.filter(row=>row.terms.length);
   const orphans = Object.keys(tracker.fa).filter(k=>!FA_BY_KEY.has(k)).length;
   const byTerm = TRACK_TERMS.map(([value])=>
-    ({term:value, n:taught.filter(row=>row.term===value).length}));
+    ({term:value, n:taught.filter(row=>row.terms.includes(value)).length}));
 
   const klaGroups = [];
   rows.forEach(row=>{
@@ -1525,12 +1536,12 @@ function summaryHTML(){
   if(!rows.length) h += `<p class="sumempty">No focus areas fall inside the current filters.</p>`;
 
   klaGroups.forEach(group=>{
-    const done = group.rows.filter(row=>row.term).length;
+    const done = group.rows.filter(row=>row.terms.length).length;
     h += `<section class="sumkla" style="--kla:var(--${group.k})">
       <div class="sumklah"><span>${esc(group.kla)}</span>
         <span class="n">${done} of ${group.rows.length}</span></div>`;
     group.rows.forEach(row=>{
-      h += `<div class="sumitem${row.term?"":" untaught"}">
+      h += `<div class="sumitem${row.terms.length?"":" untaught"}">
         <span class="t">${row.term || "—"}</span>
         <span class="st">${esc(row.r.sh)}</span>
         <span>${esc(row.r.t)}</span>
@@ -1540,7 +1551,7 @@ function summaryHTML(){
     h += `</section>`;
   });
 
-  h += `<p class="sumnote">Ticks record teaching against the NSW syllabus content in this reference.
+  h += `<p class="sumnote">A focus area counts as taught when it or any of its content points is ticked; you do not need to tick every point.
     ${orphans?`<b>${orphans} tick${orphans===1?" no longer matches":"s no longer match"} a current focus area</b> — the syllabus wording may have changed since they were recorded; they are kept, not deleted. `:""}
     Progress is stored in this browser. Export a backup to move it to another device.</p>`;
   return h;
