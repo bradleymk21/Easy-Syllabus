@@ -77,6 +77,19 @@ function syncMathsParts(){
   document.querySelectorAll("#partf .chip").forEach(chip=>
     chip.setAttribute("aria-pressed", state.part.has(chip.dataset.value)));
 }
+/* The filter drawer collapses to a summary under 640px. Above that the summary is
+   hidden by CSS and the filters are meant to be permanently visible — but a details
+   element without [open] keeps its content out of layout whatever display its child
+   is given, so the rows disappeared on desktop. Keep the open state in step with the
+   breakpoint, and leave whatever the reader chose on a narrow screen. */
+const NARROW_FILTERS = window.matchMedia("(max-width:640px)");
+function syncFilterDrawers(){
+  if(NARROW_FILTERS.matches) return;
+  document.querySelectorAll(".filterdrawer").forEach(drawer=>{ drawer.open = true; });
+}
+NARROW_FILTERS.addEventListener("change", syncFilterDrawers);
+syncFilterDrawers();
+
 chips(document.getElementById("klaf"), KLAS, state.kla, true);
 chips(document.getElementById("yearf"), YEARS, state.year, false, ()=>{ syncMathsParts(); render(); });
 chips(document.getElementById("partf"), PARTS, state.part, false);
